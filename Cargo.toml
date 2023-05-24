@@ -1,0 +1,15 @@
+[package]
+name = "python-pdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+extism-pdk = "0.3.1"
+rustpython = { path = "crates/RustPython", default-features = false, features = ["freeze-stdlib", "stdlib"] }
+
+[lib]
+crate_type = ["cdylib"]
+
+# [profile.dev]
+# opt-level = 1
+# incremental = true
