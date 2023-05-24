@@ -11,6 +11,8 @@ There are two options I've been exploring:
 
 Ideally we could use CPython itself. But open to just getting something working for the time being.
 
+Discussion can be found on [issue #1](https://github.com/extism/python-pdk/issues/1) and in [our Discord #python-pdk channel](https://discord.gg/4tUEZgNF).
+
 ## Develop
 
 ```
