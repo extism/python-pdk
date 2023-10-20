@@ -1,0 +1,6 @@
+{
+  "wasm": [
+    {"path": "infinite-loop.wasm"} 
+  ],
+  "timeout_ms": 1000
+}
