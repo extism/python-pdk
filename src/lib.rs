@@ -1,5 +1,5 @@
 use pyo3::types::{PyModule, PyTuple};
-use pyo3::{IntoPy, Py, PyAny, PyResult, Python};
+use pyo3::{prelude::*, IntoPy, Py, PyAny, PyResult, Python};
 
 pub mod py_module;
 use py_module::make_extism_module;
@@ -14,7 +14,7 @@ pub fn call_function<T: IntoPy<Py<PyTuple>>>(
     pyo3::prepare_freethreaded_python();
 
     Python::with_gil(|py| -> PyResult<()> {
-        let fun: Py<PyAny> = PyModule::from_code(py, function_code, "", "")?
+        let fun: Py<PyAny> = PyModule::from_code_bound(py, function_code, "", "")?
             .getattr(function_name)?
             .into();
 

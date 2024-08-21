@@ -1,7 +1,7 @@
 use pyo3::{append_to_inittab, PyResult};
 
-use wasi_py_rs_pyo3::call_function;
-use wasi_py_rs_pyo3::py_module::make_extism_module;
+use extism_python_pdk::call_function;
+use extism_python_pdk::py_module::make_extism_module;
 
 pub fn main() -> PyResult<()> {
     append_to_inittab!(make_extism_module);
