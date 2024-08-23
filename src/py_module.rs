@@ -34,13 +34,36 @@ pub fn var_set(key: String, value: Vec<u8>) -> PyResult<()> {
     Ok(())
 }
 
+#[pyo3::pyclass(eq, eq_int)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum LogLevel {
+    Error,
+    Debug,
+    Warn,
+    Info,
+}
+
+#[pyo3::pyfunction]
+pub fn log(level: LogLevel, msg: String) -> PyResult<()> {
+    match level {
+        LogLevel::Error => extism_pdk::log!(extism_pdk::LogLevel::Error, "{}", msg),
+        LogLevel::Debug => extism_pdk::log!(extism_pdk::LogLevel::Debug, "{}", msg),
+        LogLevel::Warn => extism_pdk::log!(extism_pdk::LogLevel::Warn, "{}", msg),
+        LogLevel::Info => extism_pdk::log!(extism_pdk::LogLevel::Info, "{}", msg),
+    }
+
+    Ok(())
+}
+
 #[pyo3::pymodule]
 #[pyo3(name = "extism")]
 pub fn make_extism_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<LogLevel>()?;
     module.add_function(pyo3::wrap_pyfunction!(input, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(output, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(config_get, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(var_get, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(var_set, module)?)?;
+    module.add_function(pyo3::wrap_pyfunction!(log, module)?)?;
     Ok(())
 }
