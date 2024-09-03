@@ -27,6 +27,8 @@ pub extern "C" fn __invoke(index: i32) -> i32 {
 
 #[export_name = "wizer.initialize"]
 extern "C" fn init() {
+    append_to_inittab!(make_extism_module);
+    pyo3::prepare_freethreaded_python();
     let mut code = String::new();
     std::io::stdin().read_to_string(&mut code).unwrap();
     Python::with_gil(|py| -> PyResult<()> {

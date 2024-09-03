@@ -54,9 +54,12 @@ fn main() -> Result<(), Error> {
     user_code.push_str("\n");
     user_code += PRELUDE;
 
-    let tmp_dir = TempDir::new()?;
-    let core_path = tmp_dir.path().join("core.wasm");
-    let shim_path = tmp_dir.path().join("shim.wasm");
+    // let tmp_dir = TempDir::new()?;
+    let tmp_dir = std::path::PathBuf::from("tmp");
+    // let core_path = tmp_dir.path().join("core.wasm");
+    // let shim_path = tmp_dir.path().join("shim.wasm");
+    let core_path = tmp_dir.as_path().join("core.wasm");
+    let shim_path = tmp_dir.as_path().join("shim.wasm");
 
     let self_cmd = env::args().next().expect("Expected a command argument");
     {
@@ -122,6 +125,7 @@ fn main() -> Result<(), Error> {
         .arg("shim")
         .arg("-o")
         .arg(&opts.output)
+        .arg("--disable-reference-types")
         .arg("--enable-bulk-memory")
         .status()?;
     if !status.success() {
