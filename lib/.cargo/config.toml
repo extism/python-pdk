@@ -1,0 +1,3 @@
+[build]
+target = "wasm32-wasi"
+rustflags = ["-C","link-args=--no-entry"]

@@ -1,0 +1,21 @@
+[package]
+name = "extism-python-pdk"
+version = "0.1.1"
+edition = "2021"
+
+[lib]
+name = "core"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0.86"
+extism-pdk = "1.1.0"
+pyo3 = { version = "0.22.0", features = ["abi3-py311"] }
+wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtimes.git", features = [
+    "py_main",
+] }
+
+[build-dependencies]
+wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtimes.git", features = [
+    "build",
+] }
