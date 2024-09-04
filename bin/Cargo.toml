@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.86"
+env_logger = "0.11.5"
+log = "0.4.22"
 rustpython-parser = "0.4.0"
 structopt = "0.3.26"
 tempfile = "3.12.0"

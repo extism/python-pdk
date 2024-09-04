@@ -1,8 +1,9 @@
 mod opt;
 mod options;
+mod py;
 
 use anyhow::{bail, Error};
-use opt::Optimizer;
+use log::LevelFilter;
 use options::Options;
 use structopt::StructOpt;
 use tempfile::TempDir;
@@ -14,35 +15,44 @@ use std::process::{Command, Stdio};
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
 const PRELUDE: &str = include_str!("prelude.py");
 
-fn find_exports(data: String) -> Result<Vec<String>, Error> {
-    let parsed = rustpython_parser::parse(&data, rustpython_parser::Mode::Module, "<source>")?
-        .expect_module();
+fn generate_shim(exports: &[String], shim_path: &std::path::Path) -> Result<(), Error> {
+    let mut module = wagen::Module::new();
+    let invoke = module.import(
+        "core",
+        "__invoke",
+        None,
+        [wagen::ValType::I32],
+        [wagen::ValType::I32],
+    );
 
-    let mut exports = vec![];
-    for stmt in parsed.body {
-        if let Some(assign) = stmt.assign_stmt() {
-            if assign.targets.len() == 1 {
-                if let Some(expr) = assign.targets[0].as_name_expr() {
-                    if expr.id.as_str() == "__all__" {
-                        if let Some(list) = assign.value.as_list_expr() {
-                            for item in &list.elts {
-                                if let Some(name) = item.as_constant_expr() {
-                                    if let Some(name) = name.value.as_str() {
-                                        exports.push(name.clone());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    let mut elements = vec![];
+    for (index, export) in exports.iter().enumerate() {
+        let fn_index = module
+            .func(&export, [], [wagen::ValType::I32], [])
+            .with_builder(|b| {
+                b.push(wagen::Instr::I32Const(index as i32));
+                b.push(wagen::Instr::Call(invoke.index()));
+            })
+            .export(export);
+        elements.push(fn_index.index);
     }
-    Ok(exports)
+
+    module.validate_save(&shim_path)?;
+    Ok(())
 }
 
 fn main() -> Result<(), Error> {
+    // Setup logging
+    let mut builder = env_logger::Builder::new();
+    builder
+        .filter(None, LevelFilter::Info)
+        .target(env_logger::Target::Stdout)
+        .init();
+
+    // Parse CLI arguments
     let opts = Options::from_args();
+
+    // Generate core module if `core` flag is set
     if opts.core {
         opt::Optimizer::new(CORE)
             .wizen(true)
@@ -57,9 +67,6 @@ fn main() -> Result<(), Error> {
     let tmp_dir = TempDir::new()?;
     let core_path = tmp_dir.path().join("core.wasm");
     let shim_path = tmp_dir.path().join("shim.wasm");
-    // let tmp_dir = std::path::PathBuf::from("tmp");
-    // let core_path = tmp_dir.as_path().join("core.wasm");
-    // let shim_path = tmp_dir.as_path().join("shim.wasm");
 
     let self_cmd = env::args().next().expect("Expected a command argument");
     {
@@ -81,35 +88,12 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let mut dest = wagen::Module::new();
-
-    let exports = find_exports(user_code)?;
+    let exports = py::find_exports(user_code)?;
     if exports.is_empty() {
         anyhow::bail!("No exports found, use __all__ to specify exported functions")
     }
 
-    let invoke = dest.import(
-        "core",
-        "__invoke",
-        None,
-        [wagen::ValType::I32],
-        [wagen::ValType::I32],
-    );
-
-    let mut elements = vec![];
-    for (index, export) in exports.into_iter().enumerate() {
-        println!("EXPORT: {}", export);
-        let fn_index = dest
-            .func(&export, [], [wagen::ValType::I32], [])
-            .with_builder(|b| {
-                b.push(wagen::Instr::I32Const(index as i32));
-                b.push(wagen::Instr::Call(invoke.index()));
-            })
-            .export(&export);
-        elements.push(fn_index.index);
-    }
-
-    dest.validate_save(&shim_path)?;
+    generate_shim(&exports, &shim_path)?;
 
     let output = Command::new("wasm-merge")
         .arg("--version")

@@ -1,7 +1,6 @@
 fn main() {
-    println!("cargo::rerun-if-env-changed=src/prelude.py");
-    println!("cargo::rerun-if-env-changed=../lib/target/wasm32-wasi/release/core.wasm");
-    // println!("cargo::rerun-if-env-changed={}", out.display());
+    println!("cargo::rerun-if-changed=src/prelude.py");
+    println!("cargo::rerun-if-changed=../lib/target/wasm32-wasi/release/core.wasm");
 
     let out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("core.wasm");
     std::process::Command::new("wasm-opt")
