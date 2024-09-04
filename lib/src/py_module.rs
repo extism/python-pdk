@@ -90,16 +90,48 @@ pub fn log(level: LogLevel, msg: &str) -> PyResult<()> {
 #[pyo3::pyclass(eq)]
 #[derive(Debug, PartialEq, Clone)]
 pub struct HttpRequest {
-    url: String,
-    method: Option<String>,
-    headers: Option<BTreeMap<String, String>>,
+    #[pyo3(get)]
+    pub url: String,
+    #[pyo3(get)]
+    pub method: Option<String>,
+    #[pyo3(get)]
+    pub headers: Option<BTreeMap<String, String>>,
+}
+
+#[pymethods]
+impl HttpRequest {
+    #[new]
+    #[pyo3(signature = (url, method=None, headers=None))]
+    pub fn new(
+        url: String,
+        method: Option<String>,
+        headers: Option<BTreeMap<String, String>>,
+    ) -> Self {
+        HttpRequest {
+            url,
+            method,
+            headers,
+        }
+    }
 }
 
 #[pyo3::pyclass(eq)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct HttpResponse {
-    data: Vec<u8>,
-    status: u16,
+    pub data: Vec<u8>,
+    pub status: u16,
+}
+
+#[pymethods]
+impl HttpResponse {
+    pub fn data<'a>(&self, py: Python<'a>) -> Bound<'a, PyBytes> {
+        let bytes = PyBytes::new_bound(py, &self.data);
+        bytes
+    }
+
+    pub fn status_code(&self) -> u16 {
+        self.status
+    }
 }
 
 #[pyo3::pyfunction]
@@ -122,8 +154,18 @@ pub fn http_request(req: HttpRequest, body: Option<&[u8]>) -> PyResult<HttpRespo
 #[pyo3::pyclass(eq)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct MemoryHandle {
-    offset: u64,
-    length: u64,
+    #[pyo3(get)]
+    pub offset: u64,
+    #[pyo3(get)]
+    pub length: u64,
+}
+
+#[pymethods]
+impl MemoryHandle {
+    #[new]
+    pub fn new(offset: u64, length: u64) -> Self {
+        MemoryHandle { offset, length }
+    }
 }
 
 #[pyo3::pyfunction]
