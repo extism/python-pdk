@@ -5,6 +5,8 @@ use pyo3::{
     PyErr, PyResult,
 };
 
+use std::collections::BTreeMap;
+
 fn error(x: extism_pdk::Error) -> PyErr {
     PyException::new_err(format!("{:?}", x))
 }
@@ -30,6 +32,15 @@ pub fn input_str() -> PyResult<String> {
 #[pyo3::pyfunction]
 pub fn output_str(result: &str) -> PyResult<()> {
     extism_pdk::output(result).map_err(error)?;
+    Ok(())
+}
+
+#[pyo3::pyfunction]
+pub fn set_error(msg: &str) -> PyResult<()> {
+    let mem = extism_pdk::Memory::from_bytes(&msg).map_err(error)?;
+    unsafe {
+        extism_pdk::extism::error_set(mem.offset());
+    }
     Ok(())
 }
 
@@ -76,15 +87,37 @@ pub fn log(level: LogLevel, msg: &str) -> PyResult<()> {
     Ok(())
 }
 
-// #[pyo3::pyfunction]
-// pub fn http_request(level: LogLevel, msg: String) -> PyResult<u64> {
-//     Ok(())
-// }
+#[pyo3::pyclass(eq)]
+#[derive(Debug, PartialEq, Clone)]
+pub struct HttpRequest {
+    url: String,
+    method: Option<String>,
+    headers: Option<BTreeMap<String, String>>,
+}
 
-// #[pyo3::pyfunction]
-// pub fn http_status_code(level: LogLevel, msg: String) -> PyResult<i32> {
-//     Ok(())
-// }
+#[pyo3::pyclass(eq)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct HttpResponse {
+    data: Vec<u8>,
+    status: u16,
+}
+
+#[pyo3::pyfunction]
+#[pyo3(signature = (req, body=None))]
+pub fn http_request(req: HttpRequest, body: Option<&[u8]>) -> PyResult<HttpResponse> {
+    let req = extism_pdk::HttpRequest {
+        url: req.url,
+        headers: req.headers.unwrap_or_default(),
+        method: req.method,
+    };
+    let res = extism_pdk::http::request(&req, body).map_err(error)?;
+    let x = HttpResponse {
+        data: res.body(),
+        status: res.status_code(),
+    };
+    res.into_memory().free();
+    Ok(x)
+}
 
 #[pyo3::pyclass(eq)]
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -162,6 +195,8 @@ pub fn make_extism_ffi_module(py: Python<'_>, module: &Bound<'_, PyModule>) -> P
     memory_module.add_function(pyo3::wrap_pyfunction!(memory_alloc, &memory_module)?)?;
 
     module.add_class::<LogLevel>()?;
+    module.add_class::<HttpRequest>()?;
+    module.add_class::<HttpResponse>()?;
     module.add_function(pyo3::wrap_pyfunction!(input_bytes, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(output_bytes, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(input_str, module)?)?;
@@ -170,6 +205,8 @@ pub fn make_extism_ffi_module(py: Python<'_>, module: &Bound<'_, PyModule>) -> P
     module.add_function(pyo3::wrap_pyfunction!(var_get, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(var_set, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(log, module)?)?;
+    module.add_function(pyo3::wrap_pyfunction!(set_error, module)?)?;
+    module.add_function(pyo3::wrap_pyfunction!(http_request, module)?)?;
     module.add_submodule(&memory_module)?;
     Ok(())
 }

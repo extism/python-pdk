@@ -1,109 +1,210 @@
-# About
+# Extism Python PDK
+![GitHub License](https://img.shields.io/github/license/extism/extism)
+![GitHub release (with filter)](https://img.shields.io/github/v/release/extism/python-pdk)
 
-Example that embeds CPython via libpython into a Wasm module written in Rust.
+This project contains a tool that can be used to create [Extism Plug-ins](https://extism.org/docs/concepts/plug-in) in Python.
 
-Offers a couple of WASI Command (exporting `_start`) Wasm modules, written in Rust and demonstrates interaction with simple Python code via [pyo3](https://pyo3.rs/v0.19.0/).
+## Overview
 
-Take a look at the similar example in [../wasi-py-rs-cpython](../wasi-py-rs-cpython) to see how this works with the [cpython](http://dgrunwald.github.io/rust-cpython/doc/cpython/index.html) crate, which is an alternative to `pyo3` that provides Rust bindings on top of the C API implemented by `libpython`.
+This PDK uses [PyO3](https://github.com/PyO3/pyo3) and [wizer](https://github.com/bytecodealliance/wizer) to run Python code as an Extism Plug-in.
 
-# How to run
+## Install the compiler
 
-Make sure you have `cargo` with the `wasm32-wasi` target. For running we use `wasmtime`, but the module will work with any WASI-compliant runtime.
+We release the compiler as native binaries you can download and run. Check the [releases](https://github.com/extism/python-pdk/releases) page for the latest.
 
-Just run `./run_me.sh` in the current folder. You will see something like this
+### Testing the Install
 
-```
-wlr/python/examples/embedding/wasi-py-rs-pyo3 $$ ./run_me.sh
-   Compiling pyo3-build-config v0.18.3
-   ...
-    Finished dev [unoptimized + debuginfo] target(s) in 26.43s
+> *Note*: [Binaryen](https://github.com/WebAssembly/binaryen), specifically the `wasm-merge` and `wasm-opt` tools
+> are required as a dependency. We will try to package this up eventually but for now it must be reachable
+> on your machine. You can install on mac with `brew install binaryen` or see their [releases page](https://github.com/WebAssembly/binaryen/releases).
 
-Calling a WASI Command which embeds Python (adding a custom module implemented in Rust) and calls a custom function:
-+ wasmtime --mapdir /usr::target/wasm32-wasi/wasi-deps/usr target/wasm32-wasi/debug/py-func-caller.wasm
-Hello from Python (libpython3.11.a / 3.11.3 (tags/v3.11.3:f3909b8, Apr 28 2023, 09:45:45) [Clang 15.0.7 ]) in Wasm(Rust).
-args=(('John', 21, ['funny', 'student']), ('Jane', 22, ['thoughtful', 'student']), ('George', 75, ['wise', 'retired']))
-
-Original people:
-[Person(Name: "John", Age: 21, Tags:["funny", "student"]),
- Person(Name: "Jane", Age: 22, Tags:["thoughtful", "student"]),
- Person(Name: "George", Age: 75, Tags:["wise", "retired"])]
-Filtered people by `student`:
-[Person(Name: "John", Age: 21, Tags:["funny", "student"]),
- Person(Name: "Jane", Age: 22, Tags:["thoughtful", "student"])]
-+ set +x
-
-Calling a WASI Command which wraps the Python binary (adding a custom module implemented in Rust):
-+ read -r -d '\0' SAMPLE_SCRIPT
-+ wasmtime --mapdir /usr::target/wasm32-wasi/wasi-deps/usr target/wasm32-wasi/debug/py-wrapper.wasm -- -c 'import person as p
-pp = [p.Person('\''a'\'', 1), p.Person('\''b'\'', 2)]
-pp[0].add_tag('\''X'\'')
-print('\''Filtered: '\'', p.filter_by_tag(pp, '\''X'\''))'
-Filtered:  [Person(Name: "a", Age: 1, Tags:["X"])]
-+ set +x
-```
-
-# About the code
-
-To see how you can expand this example start with `pyo3`'s documentation on [calling Python from Rust](https://pyo3.rs/v0.18.3/python_from_rust).
-
-The main purpose here is to show how to configure the build and dependencies.
-
-The code has the following structure:
+Then run command with no args to see the help:
 
 ```
-src
-├── bin
-│   ├── py-func-caller.rs  -  A WASI command which defines and calls a Python function that uses the "person" module.
-│   └── py-wrapper.rs  -  A wrapper around Py_Main, which adds "person" as a built-in module.
-├── lib.rs  -  A library that allows one to call a Python function (passed as text) with arbitrary Rust Tuple arguments.
-└── py_module.rs  -  A simple Python module ("person") implemented in Rust. Offers creation and tagging of people via the person.Person class.
+extism-py
+error: The following required arguments were not provided:
+    <input-py>
+
+USAGE:
+    extism-py <input-py> -o <output>
+
+For more information try --help
 ```
 
-# Build and dependencies
+> **Note**: If you are using mac, you may need to tell your security system this unsigned binary is fine. If you think this is dangerous, or can't get it to work, see the "compile from source" section below.
 
-For pyo3 to work the final binary needs to link to `libpython3.11.a`. The WLR project provides a pre-build `libpython` static library (based on [wasi-sdk](https://github.com/WebAssembly/wasi-sdk)), which depends on `wasi-sdk`. To setup the build you will need to provide several static libs and configure the linker to use them properly.
+## Getting Started
 
-Note that unless we set the `PYO3_NO_PYTHON=1` environment variable the `pyo3` crate's build requires that `python3` is installed on the build machine (even if we actually link to the wasm32-wasi `libpython` fetched by `wlr-libpy`).
+The goal of writing an [Extism plug-in](https://extism.org/docs/concepts/plug-in) is to compile your Python code to a Wasm module with exported functions that the host application can invoke.
+The first thing you should understand is creating an export.
 
-We provide a helper crate [wlr-libpy](../../../tools/wlr-libpy/), which can be used to fetch the pre-built libpython.
+### Exports
 
-Take a look at [Cargo.toml](./Cargo.toml) to see how to add it as a build dependency:
+Let's write a simple program that exports a `greet` function which will take a name as a string and return a greeting string. Paste this into a file `plugin.py`:
 
-```toml
-[build-dependencies]
-wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtimes.git", features = ["build"] }
+```python
+import extism
+
+__all__ = ["greet"]
+
+def greet():
+  name = extism.input_str()
+  extism.output_str(f"Hello, {name}")
 ```
 
-Then, in the [build.rs](./build.rs) file we only need to add this to the `main` method:
+Some things to note about this code:
 
-```rs
-fn main() {
-    // ...
-    use wlr_libpy::bld_cfg::configure_static_libs;
-    configure_static_libs().unwrap().emit_link_flags();
-    // ...
-}
+1. We can export functions by name using `__all__`. This allows the host to invoke this function. 
+3. In this PDK we code directly to the ABI. We get input from the using using `extism.input*` functions and we return data back with the `extism.output*` functions. 
+
+Let's compile this to Wasm now using the `extism-py` tool:
+
+```bash
+extism-py plugin.py -o plugin.wasm
 ```
 
-This will ensure that all required libraries are downloaded and the linker is configured to use them.
+We can now test `plugin.wasm` using the [Extism CLI](https://github.com/extism/cli)'s `run`
+command:
 
-Here is a diagram of the relevant dependencies
-
-```mermaid
-graph LR
-    wasi_py_rs_pyo3["wasi-py-rs-pyo3"] --> wlr_libpy["wlr-libpy"]
-    wlr_libpy --> wlr_assets["wlr-assets"]
-    wlr_assets --> wasi_sysroot["wasi-sysroot-19.0.tar.gz"]
-    wlr_assets --> clang_builtins["libclang_rt.builtins-wasm32-wasi-19.0.tar.gz"]
-    wlr_assets --> libpython["libpython-3.11.3-wasi-sdk-19.0.tar.gz"]
-
-    wasi_sysroot --> libwasi-emulated-signal.a
-    wasi_sysroot --> libwasi-emulated-getpid.a
-    wasi_sysroot --> libwasi-emulated-process-clocks.a
-    clang_builtins --> libclang_rt.builtins-wasm32.a
-    libpython --> libpython3.11.a
-
-    wasi_py_rs_pyo3 --> pyo3["pyo3"]
-    pyo3 --> pyo3-ffi
-    pyo3-ffi -..-> libpython3.11.a
+```bash
+extism call plugin.wasm greet --input="Benjamin" --wasi
+# => Hello, Benjamin!
 ```
+
+> **Note**: Currently `wasi` must be provided for all Python plug-ins even if they don't need system access.
+
+> **Note**: We also have a web-based, plug-in tester called the [Extism Playground](https://playground.extism.org/)
+
+### More Exports: Error Handling
+
+We catch any exceptions thrown and return them as errors to the host. Suppose we want to re-write our greeting module to never greet Benjamins:
+
+```python
+import extism
+
+__all__ = ["greet"]
+
+def greet():
+  name = extism.input_str()
+  if name == "Benjamin":
+    raise Exception("Sorry, we don't greet Benjamins!")
+  extism.output_str(f"Hello, {name}")
+```
+
+Now compile and run:
+
+```bash
+extism-py plugin.py -o plugin.wasm
+extism call plugin.wasm greet --input="Benjamin" --wasi
+# => Error: Sorry, we don't greet Benjamins!:
+# =>  File "<source>", line 17, in __invoke
+# =>  File "<source>", line 9, in greet
+echo $? # print last status code
+# => 1
+extism call plugin.wasm greet --input="Zach" --wasi
+# => Hello, Zach!
+echo $?
+# => 0
+```
+
+### JSON
+
+```python
+import extism
+
+__all__ = ["sum"]
+
+def sum():
+  params = extism.input_json()
+  extism.output_json({"sum": params['a'] + params['b']})
+```
+
+```bash
+extism call plugin.wasm sum --input='{"a": 20, "b": 21}' --wasi
+# => {"sum":41}
+```
+
+### Configs
+
+Configs are key-value pairs that can be passed in by the host when creating a
+plug-in. These can be useful to statically configure the plug-in with some data that exists across every function call. Here is a trivial example using `Config.get`:
+
+```python
+import extism
+
+__all__ = ["greet"]
+
+def greet():
+  user = extism.Config.get("user")
+  extism.output_str(f"Hello, {user}!")
+```
+
+To test it, the [Extism CLI](https://github.com/extism/cli) has a `--config` option that lets you pass in `key=value` pairs:
+
+
+```bash
+extism call plugin.wasm greet --config user=Benjamin --wasi
+# => Hello, Benjamin!
+```
+
+### Logging
+
+At the current time, calling `console.log` emits an `info` log. Please file an issue or PR if you want to expose the raw logging interface:
+
+```python
+import extism
+
+__all__ = ["log_stuff"]
+
+def log_stuff():
+  extism.log(Extism.LogLevel.Info, "Hello, world!")
+```
+
+Running it, you need to pass a log-level flag:
+
+```
+extism call plugin.wasm logStuff --wasi --log-level=info
+# => 2023/10/17 14:25:00 Hello, World!
+```
+
+## Compiling the compiler from source
+
+### Prerequisites
+Before compiling the compiler, you need to install prerequisites.
+
+1. Install Rust using [rustup](https://rustup.rs)
+2. Install the WASI target platform via `rustup target add --toolchain stable wasm32-wasi`
+3. Install the wasi sdk using the makefile command: `make download-wasi-sdk`
+4. Install [CMake](https://cmake.org/install/) (on macOS with homebrew, `brew install cmake`)
+6. Install [Binaryen](https://github.com/WebAssembly/binaryen/) and add it's install location to your PATH (only wasm-opt is required for build process)
+5. Install [7zip](https://www.7-zip.org/)(only for Windows)
+
+
+### Compiling from source
+
+Run make to compile the core crate (the engine) and the cli:
+
+```
+./build.sh
+```
+
+To test the built compiler (ensure you have Extism installed):
+```bash
+./extism-py examples/count-vowels.py -o count-vowels.wasm
+extism call out.wasm count_vowels --wasi --input='Hello World Test!'
+# => "{\"count\":4}"
+```
+
+## How it works
+
+This works a little differently than other PDKs. You cannot compile Python to Wasm because it doesn't have an appropriate type system to do this. 
+The `extism-py` command we have provided here is a little compiler / wrapper that does a series of things for you:
+
+1. It loads an "engine" Wasm program containing the Python runtime
+2. It initializes the Python runtime
+3. It loads your Python source code into memory
+4. It parses the Python source code for exports and generates 1-to-1 proxy export functions in Wasm
+5. It freezes and emits the machine state as a new Wasm file at this post-initialized point in time
+
+This new Wasm file can be used just like any other Extism plugin.
+

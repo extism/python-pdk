@@ -10,5 +10,5 @@ def count_vowels():
         if ch in ['A', 'a', 'E', 'e', 'I', 'i', 'O', 'o', 'U', 'u']:
             total += 1
     extism.log(extism.LogLevel.Info, "Hello!")
-    extism.output_bytes(json.dumps({"count": total}).encode())
+    extism.output_json({"count": total})
 
