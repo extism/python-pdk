@@ -1,6 +1,6 @@
 use anyhow::{Error, Result};
 use std::{
-    path::Path,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 use wizer::Wizer;
@@ -9,6 +9,23 @@ pub(crate) struct Optimizer<'a> {
     wizen: bool,
     optimize: bool,
     wasm: &'a [u8],
+}
+
+fn find_deps() -> PathBuf {
+    let in_repo = PathBuf::from("../lib/target/wasm32-wasi/wasi-deps/usr");
+    if in_repo.exists() {
+        return in_repo;
+    }
+
+    let in_repo_root = PathBuf::from("lib/target/wasm32-wasi/wasi-deps/usr");
+    if in_repo_root.exists() {
+        return in_repo_root;
+    }
+
+    directories::BaseDirs::new()
+        .unwrap()
+        .data_local_dir()
+        .join("extism-py")
 }
 
 impl<'a> Optimizer<'a> {
@@ -35,7 +52,8 @@ impl<'a> Optimizer<'a> {
                 .allow_wasi(true)?
                 .inherit_stdio(true)
                 .wasm_bulk_memory(true)
-                .map_dir("/usr", "../lib/target/wasm32-wasi/wasi-deps/usr")
+                // .map_dir("/usr", "../lib/target/wasm32-wasi/wasi-deps/usr")
+                .map_dir("/usr", find_deps())
                 .run(self.wasm)?;
             std::fs::write(&dest, wasm)?;
         } else {

@@ -13,7 +13,7 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
-const PRELUDE: &str = include_str!("prelude.py");
+const INVOKE: &str = include_str!("invoke.py");
 
 fn generate_shim(exports: &[String], shim_path: &std::path::Path) -> Result<(), Error> {
     let mut module = wagen::Module::new();
@@ -62,7 +62,7 @@ fn main() -> Result<(), Error> {
 
     let mut user_code = std::fs::read_to_string(&opts.input_py)?;
     user_code.push_str("\n");
-    user_code += PRELUDE;
+    user_code += INVOKE;
 
     let tmp_dir = TempDir::new()?;
     let core_path = tmp_dir.path().join("core.wasm");

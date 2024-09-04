@@ -2,9 +2,11 @@ use pyo3::types::PyModule;
 use pyo3::{append_to_inittab, prelude::*, Py, PyAny, PyResult, Python};
 
 mod py_module;
-use py_module::make_extism_module;
+use py_module::make_extism_ffi_module;
 
 use std::io::Read;
+
+const PRELUDE: &str = include_str!("prelude.py");
 
 #[no_mangle]
 pub extern "C" fn __invoke(index: i32) -> i32 {
@@ -22,11 +24,12 @@ pub extern "C" fn __invoke(index: i32) -> i32 {
 
 #[export_name = "wizer.initialize"]
 extern "C" fn init() {
-    append_to_inittab!(make_extism_module);
+    append_to_inittab!(make_extism_ffi_module);
     pyo3::prepare_freethreaded_python();
     let mut code = String::new();
     std::io::stdin().read_to_string(&mut code).unwrap();
     Python::with_gil(|py| -> PyResult<()> {
+        PyModule::from_code_bound(py, PRELUDE, "<source>", "extism")?;
         PyModule::from_code_bound(py, &code, "<source>", "extism_plugin")?;
         Ok(())
     })
