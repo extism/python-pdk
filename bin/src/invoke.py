@@ -7,6 +7,7 @@ def __invoke(index):
         return globals()[__all__[index]]()
     except BaseException as exc:
         import extism
+
         tb = "".join(traceback.format_tb(exc.__traceback__))
         err = f"{str(exc)}:\n{tb}"
         extism.ffi.set_error(err)

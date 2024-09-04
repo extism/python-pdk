@@ -2,6 +2,23 @@ from typing import Union, Optional
 import json
 import extism_ffi as ffi
 
+LogLevel = ffi.LogLevel
+log = ffi.log
+input_str = ffi.input_str
+input_bytes = ffi.input_bytes
+output_str = ffi.output_str
+output_bytes = ffi.output_bytes
+
+HttpRequest = ffi.HttpRequest
+
+
+def input_json():
+    return json.loads(input_str())
+
+
+def output_json(x):
+    output_str(json.dumps(x))
+
 
 class Var:
     @staticmethod
@@ -42,15 +59,24 @@ class Config:
         return json.loads(x)
 
 
-LogLevel = ffi.LogLevel
-log = ffi.log
-input_str = ffi.input_str
-input_bytes = ffi.input_bytes
-output_str = ffi.output_str
-output_bytes = ffi.output_bytes
+class HttpResponse:
+    _inner: ffi.HttpResponse
 
-HttpRequest = ffi.HttpRequest
-HttpResponse = ffi.HttpResponse
+    def __init__(self, res: ffi.HttpResponse):
+        self._inner = res
+
+    @property
+    def status_code(self):
+        return self._inner.status_code()
+
+    def data_bytes(self):
+        return self._inner.data()
+
+    def data_str(self):
+        return self.data_bytes().decode()
+
+    def data_json(self):
+        return json.loads(self.data_str())
 
 
 class Http:
@@ -64,12 +90,4 @@ class Http:
         req = HttpRequest(url, meth, headers or {})
         if body is not None and isinstance(body, str):
             body = body.encode()
-        return ffi.http_request(req, body)
-
-
-def input_json():
-    return json.loads(input_str())
-
-
-def output_json(x):
-    output_str(json.dumps(x))
+        return HttpResponse(ffi.http_request(req, body))
