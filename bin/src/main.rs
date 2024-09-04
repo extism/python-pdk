@@ -84,6 +84,9 @@ fn main() -> Result<(), Error> {
     let mut dest = wagen::Module::new();
 
     let exports = find_exports(user_code)?;
+    if exports.is_empty() {
+        anyhow::bail!("No exports found, use __all__ to specify exported functions")
+    }
 
     let invoke = dest.import(
         "core",
