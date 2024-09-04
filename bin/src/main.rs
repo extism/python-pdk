@@ -99,7 +99,7 @@ fn main() -> Result<(), Error> {
         let fn_index = dest
             .func(&export, [], [wagen::ValType::I32], [])
             .with_builder(|b| {
-                b.push(wagen::Instr::I32Const(index as i32 + 1));
+                b.push(wagen::Instr::I32Const(index as i32));
                 b.push(wagen::Instr::Call(invoke.index()));
             })
             .export(&export);
