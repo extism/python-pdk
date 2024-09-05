@@ -59,6 +59,10 @@ def main():
         do_build(args)
     elif command == "install":
         do_install(args)
+    else:
+        print(f'Unsupported command: {command}')
+        print('  Available commands: build, install')
+        sys.exit(1)
 
 
 if __name__ == "__main__":
