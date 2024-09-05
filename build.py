@@ -47,7 +47,13 @@ def run_subprocess(command, cwd=None, quiet=False):
     try:
         logging.info(f"Running command: {' '.join(command)} in {cwd}")
         if quiet:
-            subprocess.run(command, cwd=cwd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                command,
+                cwd=cwd,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         else:
             subprocess.run(command, cwd=cwd, check=True)
     except subprocess.CalledProcessError as e:
@@ -84,7 +90,13 @@ def main():
     parser = argparse.ArgumentParser(
         prog="build.py", description="Extism Python PDK builder"
     )
-    parser.add_argument("command", choices=["build", "install"], help="Command to run")
+    parser.add_argument(
+        "command",
+        choices=["build", "install"],
+        default="build",
+        nargs='?',
+        help="Command to run",
+    )
     parser.add_argument(
         "--bin-dir",
         default=bin_dir(),
