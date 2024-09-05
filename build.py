@@ -55,10 +55,22 @@ def run_subprocess(command, cwd=None, quiet=False):
 
 def check_rust_installed():
     try:
-        subprocess.run(["rustc", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.run(["cargo", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["rustc", "--version"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        subprocess.run(
+            ["cargo", "--version"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     except subprocess.CalledProcessError:
-        logging.error("Rust and Cargo are required but not found. Please install Rust: https://www.rust-lang.org/tools/install")
+        logging.error(
+            "Rust and Cargo are required but not found. Please install Rust: https://www.rust-lang.org/tools/install"
+        )
         sys.exit(1)
 
 
@@ -76,14 +88,16 @@ def do_install(args):
     data_dir = Path(args.data_dir)
     bin_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     dest_path = bin_dir / "extism-py"
     logging.info(f"Copying binary to {dest_path}")
     shutil.copy2(Path("./bin/target/release/extism-py"), dest_path)
-    
+
     logging.info(f"Copying data files to {data_dir}")
-    shutil.copytree(Path("./lib/target/wasm32-wasi/wasi-deps/usr"), data_dir, dirs_exist_ok=True)
-    
+    shutil.copytree(
+        Path("./lib/target/wasm32-wasi/wasi-deps/usr"), data_dir, dirs_exist_ok=True
+    )
+
     if not args.quiet:
         print(f"extism-py installed to {bin_dir}")
         print(f"Data files installed to {data_dir}")
@@ -101,7 +115,9 @@ def do_clean(args):
 
 def get_version():
     try:
-        result = subprocess.run(["./extism-py", "--version"], capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["extism-py", "--version"], capture_output=True, text=True, check=True
+        )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return "Unknown"
@@ -115,7 +131,7 @@ def main():
         "command",
         choices=["build", "install", "clean"],
         default="build",
-        nargs='?',
+        nargs="?",
         help="Command to run",
     )
     parser.add_argument(
@@ -150,8 +166,8 @@ def main():
             do_install(args)
         elif args.command == "clean":
             do_clean(args)
-        
-        if args.command in ["build", "install"]:
+
+        if args.command in ["install"]:
             version = get_version()
             logging.info(f"extism-py version: {version}")
     except Exception as e:
