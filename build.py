@@ -98,9 +98,8 @@ def do_install(args):
         Path("./lib/target/wasm32-wasi/wasi-deps/usr"), data_dir, dirs_exist_ok=True
     )
 
-    if not args.quiet:
-        print(f"extism-py installed to {bin_dir}")
-        print(f"Data files installed to {data_dir}")
+    logging.info(f"extism-py installed to {bin_dir}")
+    logging.info(f"Data files installed to {data_dir}")
     logging.info("Installation completed successfully.")
 
 
