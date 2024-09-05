@@ -153,7 +153,7 @@ def main():
         
         if args.command in ["build", "install"]:
             version = get_version()
-            logging.info(f"Extism-py version: {version}")
+            logging.info(f"extism-py version: {version}")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         sys.exit(1)
