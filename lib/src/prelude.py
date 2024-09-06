@@ -1,5 +1,7 @@
 from typing import Union, Optional
+
 import json
+from functools import wraps
 import extism_ffi as ffi
 
 LogLevel = ffi.LogLevel
@@ -11,6 +13,18 @@ output_bytes = ffi.output_bytes
 
 HttpRequest = ffi.HttpRequest
 
+IMPORT_INDEX = 0
+
+def import_fn(module, name):
+    global IMPORT_INDEX
+    idx = IMPORT_INDEX
+    def inner(func):       
+        def wrapper(*args):
+            print(f"CALL IMPORT {idx}: {module}::{name}")
+            # ffi.__invoke_host_func(idx, *args) 
+        return wrapper
+    IMPORT_INDEX += 1
+    return inner
 
 def input_json():
     return json.loads(input_str())

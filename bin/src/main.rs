@@ -70,12 +70,12 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let exports = py::find_exports(user_code)?;
+    let (imports, exports) = py::find_imports_and_exports(user_code)?;
     if exports.is_empty() {
         anyhow::bail!("No exports found, use __all__ to specify exported functions")
     }
 
-    shim::generate(&exports, &[], &shim_path)?;
+    shim::generate(&exports, &imports, &shim_path)?;
 
     let output = Command::new("wasm-merge")
         .arg("--version")

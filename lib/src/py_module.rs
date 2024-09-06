@@ -1,7 +1,7 @@
 use pyo3::{
     exceptions::PyException,
     prelude::*,
-    types::{PyBytes, PyList, PyListMethods, PyModule},
+    types::{PyBytes, PyModule, PyTuple},
     PyErr, PyResult,
 };
 
@@ -228,7 +228,7 @@ pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
 #[pyfunction]
 #[pyo3(signature = (index, *args))]
 #[pyo3(name = "__invoke_host_func")]
-fn invoke_host_func(index: u32, args: &Bound<'_, PyList>) -> PyResult<Option<MemoryHandle>> {
+fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<MemoryHandle>> {
     let length = args.len();
 
     let offs = unsafe {
@@ -282,7 +282,7 @@ fn invoke_host_func(index: u32, args: &Bound<'_, PyList>) -> PyResult<Option<Mem
 #[pyfunction]
 #[pyo3(signature = (index, *args))]
 #[pyo3(name = "__invoke_host_func0")]
-fn invoke_host_func0(index: u32, args: &Bound<'_, PyList>) -> PyResult<()> {
+fn invoke_host_func0(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<()> {
     let length = args.len();
 
     unsafe {
