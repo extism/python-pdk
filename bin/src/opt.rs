@@ -52,7 +52,6 @@ impl<'a> Optimizer<'a> {
                 .allow_wasi(true)?
                 .inherit_stdio(true)
                 .wasm_bulk_memory(true)
-                // .map_dir("/usr", "../lib/target/wasm32-wasi/wasi-deps/usr")
                 .map_dir("/usr", find_deps())
                 .run(self.wasm)?;
             std::fs::write(&dest, wasm)?;
