@@ -1,6 +1,45 @@
 use crate::*;
 use anyhow::Error;
 
+fn get_import<R: std::fmt::Debug>(
+    f: &rustpython_parser::ast::StmtFunctionDef<R>,
+    call: &rustpython_parser::ast::ExprCall<R>,
+) -> Option<Import> {
+    println!("{:?} {:?}", f, call);
+    let mut module = None;
+    let mut func = None;
+
+    let n_args = f.args.args.len();
+    let has_return = f.returns.is_some();
+
+    if let Some(module_name) = call.args[0].as_constant_expr() {
+        if let Some(module_name) = module_name.value.as_str() {
+            module = Some(module_name.to_string());
+        }
+    }
+
+    if let Some(func_name) = call.args[1].as_constant_expr() {
+        if let Some(func_name) = func_name.value.as_str() {
+            func = Some(func_name.to_string());
+        }
+    }
+
+    println!("{:?}::{:?}: {n_args} -> {has_return}", module, func);
+    match (module, func) {
+        (Some(module), Some(func)) => Some(Import {
+            module,
+            name: func,
+            params: vec![wagen::ValType::I64; n_args],
+            results: if has_return {
+                vec![wagen::ValType::I64]
+            } else {
+                vec![]
+            },
+        }),
+        _ => None, // TODO: fail here
+    }
+}
+
 fn get_import_fn_decorator<R: std::fmt::Debug>(
     f: &rustpython_parser::ast::StmtFunctionDef<R>,
 ) -> Option<Import> {
@@ -11,7 +50,7 @@ fn get_import_fn_decorator<R: std::fmt::Debug>(
                     if n.id.as_str() == "import_fn"
                         || n.id.as_str() == "extism" && name.attr.as_str() == "import_fn"
                     {
-                        println!("{:?}", call);
+                        return get_import(f, call);
                     }
                 }
             }
