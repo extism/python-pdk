@@ -1,14 +1,24 @@
 use crate::*;
 use anyhow::Error;
 
-fn contains_import_fn_decorator<R: std::fmt::Debug>(
+fn get_import_fn_decorator<R: std::fmt::Debug>(
     f: &rustpython_parser::ast::StmtFunctionDef<R>,
-) -> bool {
+) -> Option<Import> {
     for d in f.decorator_list.iter() {
-        println!("{:?}", d);
+        if let Some(call) = d.as_call_expr() {
+            if let Some(name) = call.func.as_attribute_expr() {
+                if let Some(n) = name.value.as_name_expr() {
+                    if n.id.as_str() == "import_fn"
+                        || n.id.as_str() == "extism" && name.attr.as_str() == "import_fn"
+                    {
+                        println!("{:?}", call);
+                    }
+                }
+            }
+        }
     }
 
-    return false;
+    None
 }
 
 fn collect<R: std::fmt::Debug>(
@@ -33,7 +43,9 @@ fn collect<R: std::fmt::Debug>(
             }
         }
     } else if let Some(f) = stmt.as_function_def_stmt() {
-        contains_import_fn_decorator(f);
+        if let Some(import) = get_import_fn_decorator(f) {
+            imports.push(import);
+        }
     }
 }
 
