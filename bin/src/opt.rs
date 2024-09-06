@@ -78,7 +78,7 @@ pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>) -> Result<(), Error> {
         anyhow::bail!("Failed to detect wasm-opt. Please install binaryen and make sure wasm-opt is on your path: https://github.com/WebAssembly/binaryen");
     }
     Command::new("wasm-opt")
-        .arg("--disable-reference-types")
+        .arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
         .arg("--strip")
         .arg("-O3")

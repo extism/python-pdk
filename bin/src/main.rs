@@ -7,6 +7,7 @@ use log::LevelFilter;
 use options::Options;
 use structopt::StructOpt;
 use tempfile::TempDir;
+use wagen::{Instr, ValType};
 
 use std::env;
 use std::io::Write;
@@ -15,7 +16,18 @@ use std::process::{Command, Stdio};
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
 const INVOKE: &str = include_str!("invoke.py");
 
-fn generate_shim(exports: &[String], shim_path: &std::path::Path) -> Result<(), Error> {
+struct Import {
+    module: String,
+    name: String,
+    params: Vec<wagen::ValType>,
+    results: Vec<wagen::ValType>,
+}
+
+fn generate_shim(
+    exports: &[String],
+    imports: &[Import],
+    shim_path: &std::path::Path,
+) -> Result<(), Error> {
     let mut module = wagen::Module::new();
     let invoke = module.import(
         "core",
@@ -36,6 +48,61 @@ fn generate_shim(exports: &[String], shim_path: &std::path::Path) -> Result<(), 
             .export(export);
         elements.push(fn_index.index);
     }
+
+    let n_imports = imports.len();
+    let import_table = module.tables().push(wagen::TableType {
+        element_type: wagen::RefType::FUNCREF,
+        minimum: n_imports as u64,
+        maximum: None,
+        table64: false,
+    });
+
+    let mut import_elements = Vec::new();
+    let mut import_items = vec![];
+    for import in imports.iter() {
+        let index = module.import(
+            &import.module,
+            &import.name,
+            None,
+            import.params.clone(),
+            import.results.clone(),
+        );
+        import_items.push((format!("{}_{}", import.module, import.name), index));
+    }
+    import_items.sort_by_key(|x| x.0.to_string());
+
+    for (_f, index) in import_items {
+        import_elements.push(index.index());
+    }
+
+    for p in 0..=5 {
+        for q in 0..=1 {
+            let indirect_type = module
+                .types()
+                .push(|t| t.function(vec![ValType::I64; p], vec![ValType::I64; q]));
+            let name = format!("__invokeHostFunc_{p}_{q}");
+            let mut params = vec![ValType::I32];
+            for _ in 0..p {
+                params.push(ValType::I64);
+            }
+            let invoke_host = module
+                .func(&name, params, vec![ValType::I64; q], [])
+                .export(&name);
+            let builder = invoke_host.builder();
+            for i in 1..=p {
+                builder.push(Instr::LocalGet(i as u32));
+            }
+            builder.push(Instr::LocalGet(0));
+            builder.push(Instr::CallIndirect {
+                ty: indirect_type,
+                table: import_table,
+            });
+        }
+    }
+    module.active_element(
+        Some(import_table),
+        wagen::Elements::Functions(&import_elements),
+    );
 
     module.validate_save(&shim_path)?;
     Ok(())
@@ -64,9 +131,12 @@ fn main() -> Result<(), Error> {
     user_code.push_str("\n");
     user_code += INVOKE;
 
-    let tmp_dir = TempDir::new()?;
-    let core_path = tmp_dir.path().join("core.wasm");
-    let shim_path = tmp_dir.path().join("shim.wasm");
+    // let tmp_dir = TempDir::new()?;
+    // let core_path = tmp_dir.path().join("core.wasm");
+    // let shim_path = tmp_dir.path().join("shim.wasm");
+    let tmp_dir = std::path::PathBuf::from("tmp");
+    let core_path = tmp_dir.join("core.wasm");
+    let shim_path = tmp_dir.join("shim.wasm");
 
     let self_cmd = env::args().next().expect("Expected a command argument");
     {
@@ -93,7 +163,7 @@ fn main() -> Result<(), Error> {
         anyhow::bail!("No exports found, use __all__ to specify exported functions")
     }
 
-    generate_shim(&exports, &shim_path)?;
+    generate_shim(&exports, &[], &shim_path)?;
 
     let output = Command::new("wasm-merge")
         .arg("--version")
@@ -112,7 +182,7 @@ fn main() -> Result<(), Error> {
         .arg("shim")
         .arg("-o")
         .arg(&opts.output)
-        .arg("--disable-reference-types")
+        .arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
         .status()?;
     if !status.success() {

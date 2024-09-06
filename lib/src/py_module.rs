@@ -1,7 +1,7 @@
 use pyo3::{
     exceptions::PyException,
     prelude::*,
-    types::{PyBytes, PyModule},
+    types::{PyBytes, PyList, PyListMethods, PyModule},
     PyErr, PyResult,
 };
 
@@ -225,6 +225,107 @@ pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
     })
 }
 
+#[pyfunction]
+#[pyo3(signature = (index, *args))]
+#[pyo3(name = "__invoke_host_func")]
+fn invoke_host_func(index: u32, args: &Bound<'_, PyList>) -> PyResult<Option<MemoryHandle>> {
+    let length = args.len();
+
+    let offs = unsafe {
+        match length {
+            0 => __invokeHostFunc_0_1(index),
+            1 => __invokeHostFunc_1_1(index, args.get_item(0)?.extract::<'_, u64>()?),
+            2 => __invokeHostFunc_2_1(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+            ),
+            3 => __invokeHostFunc_3_1(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+            ),
+            4 => __invokeHostFunc_4_1(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+                args.get_item(3)?.extract::<'_, u64>()?,
+            ),
+            5 => __invokeHostFunc_5_1(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+                args.get_item(3)?.extract::<'_, u64>()?,
+                args.get_item(4)?.extract::<'_, u64>()?,
+            ),
+            _ => {
+                return Err(error(extism_pdk::Error::msg(
+                    "Host functions with more than 5 parameters are not supported",
+                )));
+            }
+        }
+    };
+
+    if let Some(mem) = extism_pdk::Memory::find(offs) {
+        Ok(Some(MemoryHandle {
+            offset: mem.offset(),
+            length: mem.len() as u64,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+#[pyfunction]
+#[pyo3(signature = (index, *args))]
+#[pyo3(name = "__invoke_host_func0")]
+fn invoke_host_func0(index: u32, args: &Bound<'_, PyList>) -> PyResult<()> {
+    let length = args.len();
+
+    unsafe {
+        match length {
+            0 => __invokeHostFunc_0_0(index),
+            1 => __invokeHostFunc_1_0(index, args.get_item(0)?.extract::<'_, u64>()?),
+            2 => __invokeHostFunc_2_0(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+            ),
+            3 => __invokeHostFunc_3_0(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+            ),
+            4 => __invokeHostFunc_4_0(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+                args.get_item(3)?.extract::<'_, u64>()?,
+            ),
+            5 => __invokeHostFunc_5_0(
+                index,
+                args.get_item(0)?.extract::<'_, u64>()?,
+                args.get_item(1)?.extract::<'_, u64>()?,
+                args.get_item(2)?.extract::<'_, u64>()?,
+                args.get_item(3)?.extract::<'_, u64>()?,
+                args.get_item(4)?.extract::<'_, u64>()?,
+            ),
+            _ => {
+                return Err(error(extism_pdk::Error::msg(
+                    "Host functions with more than 5 parameters are not supported",
+                )));
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[pyo3::pymodule]
 #[pyo3(name = "extism_ffi")]
 pub fn make_extism_ffi_module(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -249,6 +350,32 @@ pub fn make_extism_ffi_module(py: Python<'_>, module: &Bound<'_, PyModule>) -> P
     module.add_function(pyo3::wrap_pyfunction!(log, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(set_error, module)?)?;
     module.add_function(pyo3::wrap_pyfunction!(http_request, module)?)?;
+    module.add_function(pyo3::wrap_pyfunction!(invoke_host_func, module)?)?;
+    module.add_function(pyo3::wrap_pyfunction!(invoke_host_func0, module)?)?;
     module.add_submodule(&memory_module)?;
     Ok(())
+}
+
+#[link(wasm_import_module = "shim")]
+extern "C" {
+    // this import will get satisified by the import shim
+    fn __invokeHostFunc_0_0(func_idx: u32);
+    fn __invokeHostFunc_1_0(func_idx: u32, ptr: u64);
+    fn __invokeHostFunc_2_0(func_idx: u32, ptr: u64, ptr2: u64);
+    fn __invokeHostFunc_3_0(func_idx: u32, ptr: u64, ptr2: u64, ptr3: u64);
+    fn __invokeHostFunc_4_0(func_idx: u32, ptr: u64, ptr2: u64, ptr3: u64, ptr4: u64);
+    fn __invokeHostFunc_5_0(func_idx: u32, ptr: u64, ptr2: u64, ptr3: u64, ptr4: u64, ptr5: u64);
+    fn __invokeHostFunc_0_1(func_idx: u32) -> u64;
+    fn __invokeHostFunc_1_1(func_idx: u32, ptr: u64) -> u64;
+    fn __invokeHostFunc_2_1(func_idx: u32, ptr: u64, ptr2: u64) -> u64;
+    fn __invokeHostFunc_3_1(func_idx: u32, ptr: u64, ptr2: u64, ptr3: u64) -> u64;
+    fn __invokeHostFunc_4_1(func_idx: u32, ptr: u64, ptr2: u64, ptr3: u64, ptr4: u64) -> u64;
+    fn __invokeHostFunc_5_1(
+        func_idx: u32,
+        ptr: u64,
+        ptr2: u64,
+        ptr3: u64,
+        ptr4: u64,
+        ptr5: u64,
+    ) -> u64;
 }
