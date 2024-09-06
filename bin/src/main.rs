@@ -16,6 +16,7 @@ use std::process::{Command, Stdio};
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
 const INVOKE: &str = include_str!("invoke.py");
 
+#[derive(Debug, Clone)]
 struct Import {
     module: String,
     name: String,
@@ -71,6 +72,7 @@ fn main() -> Result<(), Error> {
     }
 
     let (imports, exports) = py::find_imports_and_exports(user_code)?;
+    println!("{:?}", imports);
     if exports.is_empty() {
         anyhow::bail!("No exports found, use __all__ to specify exported functions")
     }

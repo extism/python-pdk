@@ -21,7 +21,7 @@ def import_fn(module, name):
     def inner(func):       
         def wrapper(*args):
             print(f"CALL IMPORT {idx}: {module}::{name}")
-            # ffi.__invoke_host_func(idx, *args) 
+            ffi.__invoke_host_func(idx, *args) 
         return wrapper
     IMPORT_INDEX += 1
     return inner

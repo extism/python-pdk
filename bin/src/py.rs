@@ -52,7 +52,7 @@ fn get_import_fn_decorator<R: std::fmt::Debug>(
                     if n.id.as_str() == "import_fn"
                         || n.id.as_str() == "extism" && name.attr.as_str() == "import_fn"
                     {
-                        return get_import(f, call);
+                        return get_import(f, call).map(Some);
                     }
                 }
             }
