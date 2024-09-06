@@ -4,8 +4,8 @@ use anyhow::Error;
 fn get_import<R: std::fmt::Debug>(
     f: &rustpython_parser::ast::StmtFunctionDef<R>,
     call: &rustpython_parser::ast::ExprCall<R>,
-) -> Option<Import> {
-    println!("{:?} {:?}", f, call);
+) -> Result<Import, Error> {
+    // println!("{:?} {:?}", f, call);
     let mut module = None;
     let mut func = None;
 
@@ -24,9 +24,9 @@ fn get_import<R: std::fmt::Debug>(
         }
     }
 
-    println!("{:?}::{:?}: {n_args} -> {has_return}", module, func);
+    // println!("IMPORT {:?}::{:?}: {n_args} -> {has_return}", module, func);
     match (module, func) {
-        (Some(module), Some(func)) => Some(Import {
+        (Some(module), Some(func)) => Ok(Import {
             module,
             name: func,
             params: vec![wagen::ValType::I64; n_args],
@@ -36,13 +36,15 @@ fn get_import<R: std::fmt::Debug>(
                 vec![]
             },
         }),
-        _ => None, // TODO: fail here
+        _ => {
+            anyhow::bail!("Invalid import, import_fn must include a module name and function name")
+        }
     }
 }
 
 fn get_import_fn_decorator<R: std::fmt::Debug>(
     f: &rustpython_parser::ast::StmtFunctionDef<R>,
-) -> Option<Import> {
+) -> Result<Option<Import>, Error> {
     for d in f.decorator_list.iter() {
         if let Some(call) = d.as_call_expr() {
             if let Some(name) = call.func.as_attribute_expr() {
@@ -57,14 +59,14 @@ fn get_import_fn_decorator<R: std::fmt::Debug>(
         }
     }
 
-    None
+    Ok(None)
 }
 
 fn collect<R: std::fmt::Debug>(
     stmt: rustpython_parser::ast::Stmt<R>,
     exports: &mut Vec<String>,
     imports: &mut Vec<Import>,
-) {
+) -> Result<(), Error> {
     if let Some(assign) = stmt.as_assign_stmt() {
         if assign.targets.len() == 1 {
             if let Some(expr) = assign.targets[0].as_name_expr() {
@@ -82,10 +84,12 @@ fn collect<R: std::fmt::Debug>(
             }
         }
     } else if let Some(f) = stmt.as_function_def_stmt() {
-        if let Some(import) = get_import_fn_decorator(f) {
+        if let Some(import) = get_import_fn_decorator(f)? {
             imports.push(import);
         }
     }
+
+    Ok(())
 }
 
 pub(crate) fn find_imports_and_exports(data: String) -> Result<(Vec<Import>, Vec<String>), Error> {
@@ -95,7 +99,7 @@ pub(crate) fn find_imports_and_exports(data: String) -> Result<(Vec<Import>, Vec
     let mut exports = vec![];
     let mut imports = vec![];
     for stmt in parsed.body {
-        collect(stmt, &mut exports, &mut imports);
+        collect(stmt, &mut exports, &mut imports)?;
     }
     Ok((imports, exports))
 }
