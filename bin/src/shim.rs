@@ -47,7 +47,6 @@ pub(crate) fn generate(
         );
         import_items.push((format!("{}_{}", import.module, import.name), index));
     }
-    import_items.sort_by_key(|x| x.0.to_string());
 
     for (_f, index) in import_items {
         import_elements.push(index.index());
