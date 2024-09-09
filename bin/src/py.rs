@@ -42,6 +42,33 @@ fn get_import<R: std::fmt::Debug>(
     }
 }
 
+fn get_export<R: std::fmt::Debug>(
+    f: &rustpython_parser::ast::StmtFunctionDef<R>,
+    is_plugin_fn: bool,
+) -> Result<Export, Error> {
+    let func = f.name.to_string();
+
+    let n_args = f.args.args.len();
+    let has_return = f.returns.is_some();
+
+    if is_plugin_fn && n_args > 0 {
+        anyhow::bail!(
+            "plugin_fn expects a function with no arguments, {func} should have no arguments"
+        );
+    }
+    Ok(Export {
+        name: func,
+        params: vec![wagen::ValType::I64; n_args],
+        results: if is_plugin_fn {
+            vec![wagen::ValType::I32]
+        } else if has_return {
+            vec![wagen::ValType::I64]
+        } else {
+            vec![]
+        },
+    })
+}
+
 fn get_import_fn_decorator<R: std::fmt::Debug>(
     f: &rustpython_parser::ast::StmtFunctionDef<R>,
 ) -> Result<Option<Import>, Error> {
@@ -62,37 +89,59 @@ fn get_import_fn_decorator<R: std::fmt::Debug>(
     Ok(None)
 }
 
-fn collect<R: std::fmt::Debug>(
-    stmt: rustpython_parser::ast::Stmt<R>,
-    exports: &mut Vec<String>,
-    imports: &mut Vec<Import>,
-) -> Result<(), Error> {
-    if let Some(assign) = stmt.as_assign_stmt() {
-        if assign.targets.len() == 1 {
-            if let Some(expr) = assign.targets[0].as_name_expr() {
-                if expr.id.as_str() == "__all__" {
-                    if let Some(list) = assign.value.as_list_expr() {
-                        for item in &list.elts {
-                            if let Some(name) = item.as_constant_expr() {
-                                if let Some(name) = name.value.as_str() {
-                                    exports.push(name.clone());
-                                }
-                            }
-                        }
+fn get_export_decorator<R: std::fmt::Debug>(
+    f: &rustpython_parser::ast::StmtFunctionDef<R>,
+) -> Result<Option<Export>, Error> {
+    for d in f.decorator_list.iter() {
+        if let Some(call) = d.as_call_expr() {
+            if let Some(name) = call.func.as_attribute_expr() {
+                if let Some(n) = name.value.as_name_expr() {
+                    if n.id.as_str() == "plugin_fn"
+                        || n.id.as_str() == "extism" && name.attr.as_str() == "plugin_fn"
+                    {
+                        anyhow::bail!("extism.plugin_fn takes no arguments");
+                    } else if n.id.as_str() == "shared_fn"
+                        || n.id.as_str() == "extism" && name.attr.as_str() == "shared_fn"
+                    {
+                        anyhow::bail!("extism.shared_fn takes no arguments");
                     }
                 }
             }
+        } else if let Some(attr) = d.as_attribute_expr() {
+            if let Some(n) = attr.value.as_name_expr() {
+                if n.id.as_str() == "plugin_fn"
+                    || n.id.as_str() == "extism" && attr.attr.as_str() == "plugin_fn"
+                {
+                    return get_export(f, true).map(Some);
+                } else if n.id.as_str() == "shared_fn"
+                    || n.id.as_str() == "extism" && attr.attr.as_str() == "shared_fn"
+                {
+                    return get_export(f, false).map(Some);
+                }
+            }
         }
-    } else if let Some(f) = stmt.as_function_def_stmt() {
+    }
+
+    Ok(None)
+}
+
+fn collect<R: std::fmt::Debug>(
+    stmt: rustpython_parser::ast::Stmt<R>,
+    exports: &mut Vec<Export>,
+    imports: &mut Vec<Import>,
+) -> Result<(), Error> {
+    if let Some(f) = stmt.as_function_def_stmt() {
         if let Some(import) = get_import_fn_decorator(f)? {
             imports.push(import);
+        } else if let Some(export) = get_export_decorator(f)? {
+            exports.push(export);
         }
     }
 
     Ok(())
 }
 
-pub(crate) fn find_imports_and_exports(data: String) -> Result<(Vec<Import>, Vec<String>), Error> {
+pub(crate) fn find_imports_and_exports(data: String) -> Result<(Vec<Import>, Vec<Export>), Error> {
     let parsed = rustpython_parser::parse(&data, rustpython_parser::Mode::Module, "<source>")?
         .expect_module();
 

@@ -2,7 +2,7 @@ use crate::*;
 use wagen::{Instr, ValType};
 
 pub(crate) fn generate(
-    exports: &[String],
+    exports: &[Export],
     imports: &[Import],
     shim_path: &std::path::Path,
 ) -> Result<(), Error> {
@@ -18,12 +18,17 @@ pub(crate) fn generate(
     let mut elements = vec![];
     for (index, export) in exports.iter().enumerate() {
         let fn_index = module
-            .func(&export, [], [wagen::ValType::I32], [])
+            .func(
+                &export.name,
+                export.params.clone(),
+                export.results.clone(),
+                [],
+            )
             .with_builder(|b| {
                 b.push(wagen::Instr::I32Const(index as i32));
                 b.push(wagen::Instr::Call(invoke.index()));
             })
-            .export(export);
+            .export(&export.name);
         elements.push(fn_index.index);
     }
 

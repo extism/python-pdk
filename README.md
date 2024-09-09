@@ -45,8 +45,7 @@ Let's write a simple program that exports a `greet` function which will take a n
 ```python
 import extism
 
-__all__ = ["greet"]
-
+@extism.plugin_fn
 def greet():
   name = extism.input_str()
   extism.output_str(f"Hello, {name}")
@@ -54,7 +53,7 @@ def greet():
 
 Some things to note about this code:
 
-1. We can export functions by name using `__all__`. This allows the host to invoke this function. 
+1. We can export functions by name using the `extism.plugin_fn` decorator. This allows the host to invoke this function. 
 3. In this PDK we code directly to the ABI. We get input from the using using `extism.input*` functions and we return data back with the `extism.output*` functions. 
 
 Let's compile this to Wasm now using the `extism-py` tool:
@@ -82,8 +81,7 @@ We catch any exceptions thrown and return them as errors to the host. Suppose we
 ```python
 import extism
 
-__all__ = ["greet"]
-
+@extism.plugin_fn
 def greet():
   name = extism.input_str()
   if name == "Benjamin":
@@ -112,8 +110,7 @@ echo $?
 ```python
 import extism
 
-__all__ = ["sum"]
-
+@extism.plugin_fn
 def sum():
   params = extism.input_json()
   extism.output_json({"sum": params['a'] + params['b']})
@@ -132,8 +129,7 @@ plug-in. These can be useful to statically configure the plug-in with some data 
 ```python
 import extism
 
-__all__ = ["greet"]
-
+@extism.plugin_fn
 def greet():
   user = extism.Config.get("user")
   extism.output_str(f"Hello, {user}!")
@@ -154,8 +150,7 @@ At the current time, calling `console.log` emits an `info` log. Please file an i
 ```python
 import extism
 
-__all__ = ["log_stuff"]
-
+@extism.plugin_fn
 def log_stuff():
   extism.log(Extism.LogLevel.Info, "Hello, world!")
 ```

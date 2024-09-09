@@ -15,19 +15,46 @@ HttpRequest = ffi.HttpRequest
 
 IMPORT_INDEX = 0
 
+__exports = []
+
+
 def import_fn(module, name):
     global IMPORT_INDEX
     idx = IMPORT_INDEX
-    def inner(func):       
+
+    def inner(func):
         def wrapper(*args):
             print(f"CALL IMPORT {idx}: {module}::{name}")
-            if 'return' in func.__annotations__:
+            if "return" in func.__annotations__:
                 ffi.__invoke_host_func(idx, *args)
             else:
                 ffi.__invoke_host_func0(idx, *args)
+
         return wrapper
+
     IMPORT_INDEX += 1
     return inner
+
+
+def plugin_fn(func):
+    global __exports
+    __exports.append(func)
+
+    def inner():
+        return func()
+
+    return inner
+
+
+def shared_fn(func):
+    global __exports
+    __exports.append(func)
+
+    def inner(*args, **kw):
+        return func(*args, **kw)
+
+    return inner
+
 
 def input_json():
     return json.loads(input_str())

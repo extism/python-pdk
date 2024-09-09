@@ -24,6 +24,13 @@ struct Import {
     results: Vec<wagen::ValType>,
 }
 
+#[derive(Debug, Clone)]
+struct Export {
+    name: String,
+    params: Vec<wagen::ValType>,
+    results: Vec<wagen::ValType>,
+}
+
 fn main() -> Result<(), Error> {
     // Setup logging
     let mut builder = env_logger::Builder::new();
@@ -72,9 +79,10 @@ fn main() -> Result<(), Error> {
     }
 
     let (imports, exports) = py::find_imports_and_exports(user_code)?;
-    println!("{:?}", imports);
     if exports.is_empty() {
-        anyhow::bail!("No exports found, use __all__ to specify exported functions")
+        anyhow::bail!(
+            "No exports found, use the @extism.plugin_fn decorator to specify exported functions"
+        )
     }
 
     shim::generate(&exports, &imports, &shim_path)?;

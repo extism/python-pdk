@@ -1,8 +1,7 @@
-__all__ = ["count_vowels"]
-
 import extism
 import json
 
+@extism.plugin_fn
 def count_vowels():
     input = extism.input_str()
     total = 0
