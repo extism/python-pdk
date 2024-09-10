@@ -1,7 +1,6 @@
 from typing import Union, Optional
 
 import json
-from functools import wraps
 import extism_ffi as ffi
 
 LogLevel = ffi.LogLevel
