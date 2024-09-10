@@ -7,6 +7,7 @@ pub(crate) fn generate(
     shim_path: &std::path::Path,
 ) -> Result<(), Error> {
     let mut module = wagen::Module::new();
+
     let invoke = module.import(
         "core",
         "__invoke",
@@ -14,23 +15,6 @@ pub(crate) fn generate(
         [wagen::ValType::I32],
         [wagen::ValType::I32],
     );
-
-    let mut elements = vec![];
-    for (index, export) in exports.iter().enumerate() {
-        let fn_index = module
-            .func(
-                &export.name,
-                export.params.clone(),
-                export.results.clone(),
-                [],
-            )
-            .with_builder(|b| {
-                b.push(wagen::Instr::I32Const(index as i32));
-                b.push(wagen::Instr::Call(invoke.index()));
-            })
-            .export(&export.name);
-        elements.push(fn_index.index);
-    }
 
     let n_imports = imports.len();
     let import_table = module.tables().push(wagen::TableType {
@@ -41,7 +25,6 @@ pub(crate) fn generate(
     });
 
     let mut import_elements = Vec::new();
-    let mut import_items = vec![];
     for import in imports.iter() {
         let index = module.import(
             &import.module,
@@ -50,10 +33,6 @@ pub(crate) fn generate(
             import.params.clone(),
             import.results.clone(),
         );
-        import_items.push((format!("{}_{}", import.module, import.name), index));
-    }
-
-    for (_f, index) in import_items {
         import_elements.push(index.index());
     }
 
@@ -85,6 +64,21 @@ pub(crate) fn generate(
         Some(import_table),
         wagen::Elements::Functions(&import_elements),
     );
+
+    for (index, export) in exports.iter().enumerate() {
+        module
+            .func(
+                &export.name,
+                export.params.clone(),
+                export.results.clone(),
+                [],
+            )
+            .with_builder(|b| {
+                b.push(wagen::Instr::I32Const(index as i32));
+                b.push(wagen::Instr::Call(invoke.index()));
+            })
+            .export(&export.name);
+    }
 
     module.validate_save(&shim_path)?;
     Ok(())

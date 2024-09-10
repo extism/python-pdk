@@ -9,6 +9,7 @@ use options::Options;
 use structopt::StructOpt;
 use tempfile::TempDir;
 
+use std::borrow::Cow;
 use std::env;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -41,10 +42,15 @@ fn main() -> Result<(), Error> {
 
     // Parse CLI arguments
     let opts = Options::from_args();
+    let core: Cow<[u8]> = if let Ok(path) = std::env::var("EXTISM_ENGINE_PATH") {
+        Cow::Owned(std::fs::read(path)?)
+    } else {
+        Cow::Borrowed(CORE)
+    };
 
     // Generate core module if `core` flag is set
     if opts.core {
-        opt::Optimizer::new(CORE)
+        opt::Optimizer::new(&core)
             .wizen(true)
             .write_optimized_wasm(opts.output)?;
         return Ok(());
