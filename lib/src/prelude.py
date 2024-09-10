@@ -25,8 +25,10 @@ def import_fn(module, name):
         def wrapper(*args):
             print(f"CALL IMPORT {idx}: {module}::{name}")
             if "return" in func.__annotations__:
+                print("WITH RETURN")
                 ffi.__invoke_host_func(idx, *args)
             else:
+                print("NO RETURN")
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper

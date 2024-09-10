@@ -92,7 +92,7 @@ pub(crate) fn generate(
             .export(&export.name);
         let builder = func.builder();
         builder.push(Instr::Call(__arg_start.index()));
-        for (parami, param) in export.params.clone().into_iter().enumerate() {
+        for (parami, param) in export.params.iter().enumerate() {
             builder.push(Instr::LocalGet(parami as u32));
 
             match param {
