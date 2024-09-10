@@ -8,13 +8,29 @@ pub(crate) fn generate(
 ) -> Result<(), Error> {
     let mut module = wagen::Module::new();
 
-    let invoke = module.import(
+    let __invoke = module.import("core", "__invoke", None, [wagen::ValType::I32], []);
+
+    let __invoke_i64 = module.import(
         "core",
-        "__invoke",
+        "__invoke_i64",
+        None,
+        [wagen::ValType::I32],
+        [wagen::ValType::I64],
+    );
+
+    let __invoke_i32 = module.import(
+        "core",
+        "__invoke_i32",
         None,
         [wagen::ValType::I32],
         [wagen::ValType::I32],
     );
+
+    let __arg_start = module.import("core", "__arg_start", None, [], []);
+    let __arg_i32 = module.import("core", "__arg_i32", None, [ValType::I32], []);
+    let __arg_i64 = module.import("core", "__arg_i64", None, [ValType::I64], []);
+    let __arg_f32 = module.import("core", "__arg_f32", None, [ValType::F32], []);
+    let __arg_f64 = module.import("core", "__arg_f64", None, [ValType::F64], []);
 
     let n_imports = imports.len();
     let import_table = module.tables().push(wagen::TableType {
@@ -66,18 +82,59 @@ pub(crate) fn generate(
     );
 
     for (index, export) in exports.iter().enumerate() {
-        module
+        let func = module
             .func(
                 &export.name,
                 export.params.clone(),
                 export.results.clone(),
                 [],
             )
-            .with_builder(|b| {
-                b.push(wagen::Instr::I32Const(index as i32));
-                b.push(wagen::Instr::Call(invoke.index()));
-            })
             .export(&export.name);
+        let builder = func.builder();
+        builder.push(Instr::Call(__arg_start.index()));
+        for (parami, param) in export.params.clone().into_iter().enumerate() {
+            builder.push(Instr::LocalGet(parami as u32));
+
+            match param {
+                ValType::I32 => {
+                    builder.push(Instr::Call(__arg_i32.index()));
+                }
+                ValType::I64 => {
+                    builder.push(Instr::Call(__arg_i64.index()));
+                }
+                ValType::F32 => {
+                    builder.push(Instr::Call(__arg_f32.index()));
+                }
+                ValType::F64 => {
+                    builder.push(Instr::Call(__arg_f64.index()));
+                }
+                r => {
+                    anyhow::bail!("Unsupported param type: {:?}", r);
+                }
+            }
+        }
+
+        builder.push(Instr::I32Const(index as i32));
+        match export.results.first() {
+            None => {
+                builder.push(Instr::Call(__invoke.index()));
+            }
+            Some(ValType::I32) => {
+                builder.push(Instr::Call(__invoke_i32.index()));
+            }
+            Some(ValType::I64) => {
+                builder.push(Instr::Call(__invoke_i64.index()));
+            }
+            // Some(ValType::F32) => {
+            //     builder.push(Instr::Call(__invoke_f32.index()));
+            // }
+            // Some(ValType::F64) => {
+            //     builder.push(Instr::Call(__invoke_f64.index()));
+            // }
+            Some(r) => {
+                anyhow::bail!("Unsupported result type: {:?}", r);
+            }
+        }
     }
 
     module.validate_save(&shim_path)?;
