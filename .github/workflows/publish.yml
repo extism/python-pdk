@@ -71,16 +71,16 @@ jobs:
             asset_name: extism-py-aarch64-macos-${{ github.event.release.tag_name }}
             shasum_cmd: shasum -a 256
             target: aarch64-apple-darwin
-          - name: windows
-            os: windows-latest
-            path: target\x86_64-pc-windows-msvc\release\extism-py.exe
-            asset_name: extism-py-x86_64-windows-${{ github.event.release.tag_name }}
-            target: x86_64-pc-windows-msvc
-          - name: windows-arm64
-            os: windows-latest
-            path: target\aarch64-pc-windows-msvc\release\extism-py.exe
-            asset_name: extism-py-aarch64-windows-${{ github.event.release.tag_name }}
-            target: aarch64-pc-windows-msvc
+          # - name: windows
+          #   os: windows-latest
+          #   path: target\x86_64-pc-windows-msvc\release\extism-py.exe
+          #   asset_name: extism-py-x86_64-windows-${{ github.event.release.tag_name }}
+          #   target: x86_64-pc-windows-msvc
+          # - name: windows-arm64
+          #   os: windows-latest
+          #   path: target\aarch64-pc-windows-msvc\release\extism-py.exe
+          #   asset_name: extism-py-aarch64-windows-${{ github.event.release.tag_name }}
+          #   target: aarch64-pc-windows-msvc
 
     steps:
       - uses: actions/checkout@v1
