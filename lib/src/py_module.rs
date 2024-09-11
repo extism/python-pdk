@@ -230,7 +230,6 @@ pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
 #[pyo3(name = "__invoke_host_func")]
 fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<MemoryHandle>> {
     let length = args.len();
-    println!("__invoke_host_func: {index}");
 
     let offs = unsafe {
         match length {
@@ -285,8 +284,6 @@ fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<Me
 #[pyo3(name = "__invoke_host_func0")]
 fn invoke_host_func0(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<()> {
     let length = args.len();
-
-    println!("__invoke_host_func0: {index}");
 
     unsafe {
         match length {

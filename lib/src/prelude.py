@@ -21,14 +21,27 @@ def import_fn(module, name):
     global IMPORT_INDEX
     idx = IMPORT_INDEX
 
+    def convert_arg(arg):
+        if isinstance(arg, str):
+            return ffi.memory.alloc(arg.encode()).offset
+        elif isinstance(arg, bytes):
+            return ffi.memory.alloc(arg).offset
+        else:
+            raise Exception(f"Unsupported argument type: {type(arg)}")
+
     def inner(func):
         def wrapper(*args):
-            print(f"CALL IMPORT {idx}: {module}::{name}")
+            args = [convert_arg(a) for a in args]
             if "return" in func.__annotations__:
-                print("WITH RETURN")
-                ffi.__invoke_host_func(idx, *args)
+                res = ffi.__invoke_host_func(idx, *args)
+                mem = ffi.memory.find(res)
+                if mem is None:
+                    return None
+                if func.__annotations__["return"] == str:
+                    return ffi.memory.string(mem)
+                else:
+                    raise Exception(f"Unsupported return type: {type(arg)}")
             else:
-                print("NO RETURN")
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper

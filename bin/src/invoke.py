@@ -3,6 +3,7 @@ import traceback
 
 def __invoke(*args):
     import extism
+
     index = args[0]
     a = args[1:]
 
