@@ -12,9 +12,9 @@ output_bytes = ffi.output_bytes
 
 HttpRequest = ffi.HttpRequest
 
-IMPORT_INDEX = 0
-
 __exports = []
+
+IMPORT_INDEX = 0
 
 
 class Codec:
@@ -77,20 +77,17 @@ def import_fn(module, name):
 
     def inner(func):
         def wrapper(*args):
-            print("ARGS", args)
             args = [_alloc(a) for a in args]
             if "return" in func.__annotations__:
                 ret = func.__annotations__["return"]
                 print("RETURN", func, ret, module, name, idx, args)
                 res = ffi.__invoke_host_func(idx, *args)
-                print("AFTER")
                 return _read(ret, res)
             else:
                 print("NO RETURN", func, module, name, idx, args)
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper
-
     IMPORT_INDEX += 1
     return inner
 

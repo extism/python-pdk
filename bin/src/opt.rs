@@ -84,7 +84,7 @@ pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>) -> Result<(), Error> {
         .arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
         .arg("--strip")
-        .arg("-O3")
+        .arg("-O2")
         .arg(dest.as_ref())
         .arg("-o")
         .arg(dest.as_ref())

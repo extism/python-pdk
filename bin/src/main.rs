@@ -57,7 +57,7 @@ fn main() -> Result<(), Error> {
     }
 
     let mut user_code = std::fs::read_to_string(&opts.input_py)?;
-    user_code.push_str('\n');
+    user_code.push('\n');
     user_code += INVOKE;
 
     let tmp_dir = TempDir::new()?;

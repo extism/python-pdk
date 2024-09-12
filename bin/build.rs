@@ -3,12 +3,5 @@ fn main() {
     println!("cargo::rerun-if-changed=../lib/target/wasm32-wasi/release/core.wasm");
 
     let out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("core.wasm");
-    std::process::Command::new("wasm-opt")
-        .arg("--disable-reference-types")
-        .arg("-O2")
-        .arg("../lib/target/wasm32-wasi/release/core.wasm")
-        .arg("-o")
-        .arg(out)
-        .status()
-        .unwrap();
+    std::fs::copy("../lib/target/wasm32-wasi/release/core.wasm", out).unwrap();
 }

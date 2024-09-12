@@ -1,7 +1,7 @@
 use pyo3::{
     exceptions::PyException,
     prelude::*,
-    types::{PyBytes, PyModule, PyTuple},
+    types::{PyBytes, PyInt, PyModule, PyTuple},
     PyErr, PyResult,
 };
 
@@ -226,11 +226,11 @@ pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
 }
 
 #[pyfunction]
-#[pyo3(signature = (index, *args))]
+#[pyo3(signature = (i, *args))]
 #[pyo3(name = "__invoke_host_func")]
-fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<MemoryHandle>> {
+fn invoke_host_func(i: &Bound<'_, PyInt>, args: &Bound<'_, PyTuple>) -> PyResult<u64> {
     let length = args.len();
-
+    let index = i.extract::<'_, u32>()?;
     let offs = unsafe {
         match length {
             0 => __invokeHostFunc_0_1(index),
@@ -269,22 +269,15 @@ fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<Me
         }
     };
 
-    println!("OFFS: {offs}");
-    if let Some(mem) = extism_pdk::Memory::find(offs) {
-        Ok(Some(MemoryHandle {
-            offset: mem.offset(),
-            length: mem.len() as u64,
-        }))
-    } else {
-        Ok(None)
-    }
+    Ok(offs)
 }
 
 #[pyfunction]
 #[pyo3(signature = (index, *args))]
 #[pyo3(name = "__invoke_host_func0")]
-fn invoke_host_func0(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<()> {
+fn invoke_host_func0(index: &Bound<'_, PyInt>, args: &Bound<'_, PyTuple>) -> PyResult<()> {
     let length = args.len();
+    let index = index.extract::<'_, u32>()?;
 
     unsafe {
         match length {

@@ -8,6 +8,20 @@ pub(crate) fn generate(
 ) -> Result<(), Error> {
     let mut module = wagen::Module::new();
 
+    let n_imports = imports.len();
+    let import_table = module.tables().push(wagen::TableType {
+        element_type: wagen::RefType::FUNCREF,
+        minimum: n_imports as u64,
+        maximum: None,
+        table64: false,
+    });
+
+    let __arg_start = module.import("core", "__arg_start", None, [], []);
+    let __arg_i32 = module.import("core", "__arg_i32", None, [ValType::I32], []);
+    let __arg_i64 = module.import("core", "__arg_i64", None, [ValType::I64], []);
+    let __arg_f32 = module.import("core", "__arg_f32", None, [ValType::F32], []);
+    let __arg_f64 = module.import("core", "__arg_f64", None, [ValType::F64], []);
+
     let __invoke = module.import("core", "__invoke", None, [wagen::ValType::I32], []);
 
     let __invoke_i64 = module.import(
@@ -26,20 +40,6 @@ pub(crate) fn generate(
         [wagen::ValType::I32],
     );
 
-    let __arg_start = module.import("core", "__arg_start", None, [], []);
-    let __arg_i32 = module.import("core", "__arg_i32", None, [ValType::I32], []);
-    let __arg_i64 = module.import("core", "__arg_i64", None, [ValType::I64], []);
-    let __arg_f32 = module.import("core", "__arg_f32", None, [ValType::F32], []);
-    let __arg_f64 = module.import("core", "__arg_f64", None, [ValType::F64], []);
-
-    let n_imports = imports.len();
-    let import_table = module.tables().push(wagen::TableType {
-        element_type: wagen::RefType::FUNCREF,
-        minimum: n_imports as u64,
-        maximum: None,
-        table64: false,
-    });
-
     let mut import_elements = Vec::new();
     for import in imports.iter() {
         let index = module.import(
@@ -51,11 +51,6 @@ pub(crate) fn generate(
         );
         import_elements.push(index.index());
     }
-
-    module.active_element(
-        Some(import_table),
-        wagen::Elements::Functions(&import_elements),
-    );
 
     for p in 0..=5 {
         for q in 0..=1 {
@@ -80,11 +75,21 @@ pub(crate) fn generate(
                 ty: indirect_type,
                 table: import_table,
             });
-            builder.push(Instr::Return);
         }
     }
 
+    module.active_element(
+        Some(import_table),
+        wagen::Elements::Functions(&import_elements),
+    );
+
     for (index, export) in exports.iter().enumerate() {
+        if export.results.len() > 1 {
+            anyhow::bail!(
+                "Multiple return arguments are not currently supported but used in exported function {}",
+                export.name
+            );
+        }
         let func = module
             .func(
                 &export.name,
