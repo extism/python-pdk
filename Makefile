@@ -14,6 +14,9 @@ check:
 	uv run ruff check bin/src/invoke.py
 	uv run ruff check build.py
 
+clean:
+	rm -rf bin/target lib/target
+
 core:
 	cd lib && cargo build --release
 

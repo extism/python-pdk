@@ -17,31 +17,76 @@ IMPORT_INDEX = 0
 __exports = []
 
 
+class Codec:
+    def __init__(self, value):
+        self.value = value
+
+    def encode(self) -> bytes:
+        raise Exception("encode not implemented")
+
+    @staticmethod
+    def decode(s: bytes):
+        raise Exception("encode not implemented")
+
+
+class Json(Codec):
+    def encode(self) -> bytes:
+        return json.dumps(self.value).encode()
+
+    @staticmethod
+    def decode(s: bytes):
+        return Json(json.loads(s.decode()))
+
+
+def _alloc(x):
+    if isinstance(x, str):
+        return ffi.memory.alloc(x.encode()).offset
+    elif isinstance(x, bytes):
+        return ffi.memory.alloc(x).offset
+    elif isinstance(x, Codec):
+        return ffi.memory.alloc(x.encode()).offset
+    elif isinstance(x, ffi.memory.MemoryHandle):
+        return a
+    elif isinstance(x, int):
+        return x
+    else:
+        raise Exception(f"Unsupported python type: {type(x)}")
+
+
+def _read(t, x):
+    if t == int:
+        return x
+
+    mem = ffi.memory.find(x)
+    if mem is None:
+        return None
+
+    if t == str:
+        return ffi.memory.string(mem)
+    elif t == bytes:
+        return ffi.memory.bytes(mem)
+    elif t == Json:
+        return Json.decode(ffi.memory.bytes(mem))
+    else:
+        raise Exception(f"Unsupported python type: {t}")
+
+
 def import_fn(module, name):
     global IMPORT_INDEX
     idx = IMPORT_INDEX
 
-    def convert_arg(arg):
-        if isinstance(arg, str):
-            return ffi.memory.alloc(arg.encode()).offset
-        elif isinstance(arg, bytes):
-            return ffi.memory.alloc(arg).offset
-        else:
-            raise Exception(f"Unsupported argument type: {type(arg)}")
-
     def inner(func):
         def wrapper(*args):
-            args = [convert_arg(a) for a in args]
+            print("ARGS", args)
+            args = [_alloc(a) for a in args]
             if "return" in func.__annotations__:
+                ret = func.__annotations__["return"]
+                print("RETURN", func, ret, module, name, idx, args)
                 res = ffi.__invoke_host_func(idx, *args)
-                mem = ffi.memory.find(res)
-                if mem is None:
-                    return None
-                if func.__annotations__["return"] == str:
-                    return ffi.memory.string(mem)
-                else:
-                    raise Exception(f"Unsupported return type: {type(arg)}")
+                print("AFTER")
+                return _read(ret, res)
             else:
+                print("NO RETURN", module, name, idx, args)
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper
@@ -64,8 +109,12 @@ def shared_fn(func):
     global __exports
     __exports.append(func)
 
-    def inner(*args, **kw):
-        return func(*args, **kw)
+    def inner(*args):
+        args = [_alloc(a) for a in args]
+        res = func(*args)
+        if "return" in func.__annotations__:
+            ret = func.__annotations__["return"]
+            return _read(ret, res)
 
     return inner
 

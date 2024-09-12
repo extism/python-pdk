@@ -12,6 +12,10 @@ pub(crate) struct Optimizer<'a> {
 }
 
 fn find_deps() -> PathBuf {
+    if let Ok(path) = std::env::var("EXTISM_PYTHON_USR_DIR") {
+        return PathBuf::from(path);
+    }
+
     let in_repo = PathBuf::from("../lib/target/wasm32-wasi/wasi-deps/usr");
     if in_repo.exists() {
         return in_repo;

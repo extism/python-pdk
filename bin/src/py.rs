@@ -24,7 +24,7 @@ fn get_import<R: std::fmt::Debug>(
         }
     }
 
-    // println!("IMPORT {:?}::{:?}: {n_args} -> {has_return}", module, func);
+    println!("IMPORT {:?}::{:?}: {n_args} -> {has_return}", module, func);
     match (module, func) {
         (Some(module), Some(func)) => Ok(Import {
             module,

@@ -62,9 +62,15 @@ pub(crate) fn generate(
             for _ in 0..p {
                 params.push(ValType::I64);
             }
+            println!(
+                "INVOKE HOST FN: {name}: {:?}, {:?}",
+                params,
+                vec![ValType::I64; q]
+            );
             let invoke_host = module
                 .func(&name, params, vec![ValType::I64; q], [])
                 .export(&name);
+
             let builder = invoke_host.builder();
             for i in 1..=p {
                 builder.push(Instr::LocalGet(i as u32));
@@ -74,6 +80,7 @@ pub(crate) fn generate(
                 ty: indirect_type,
                 table: import_table,
             });
+            builder.push(Instr::Return);
         }
     }
     module.active_element(

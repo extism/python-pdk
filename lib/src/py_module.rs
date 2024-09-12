@@ -269,6 +269,7 @@ fn invoke_host_func(index: u32, args: &Bound<'_, PyTuple>) -> PyResult<Option<Me
         }
     };
 
+    println!("OFFS: {offs}");
     if let Some(mem) = extism_pdk::Memory::find(offs) {
         Ok(Some(MemoryHandle {
             offset: mem.offset(),
