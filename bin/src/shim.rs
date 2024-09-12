@@ -52,6 +52,11 @@ pub(crate) fn generate(
         import_elements.push(index.index());
     }
 
+    module.active_element(
+        Some(import_table),
+        wagen::Elements::Functions(&import_elements),
+    );
+
     for p in 0..=5 {
         for q in 0..=1 {
             let indirect_type = module
@@ -62,11 +67,6 @@ pub(crate) fn generate(
             for _ in 0..p {
                 params.push(ValType::I64);
             }
-            println!(
-                "INVOKE HOST FN: {name}: {:?}, {:?}",
-                params,
-                vec![ValType::I64; q]
-            );
             let invoke_host = module
                 .func(&name, params, vec![ValType::I64; q], [])
                 .export(&name);
@@ -83,10 +83,6 @@ pub(crate) fn generate(
             builder.push(Instr::Return);
         }
     }
-    module.active_element(
-        Some(import_table),
-        wagen::Elements::Functions(&import_elements),
-    );
 
     for (index, export) in exports.iter().enumerate() {
         let func = module
@@ -144,6 +140,6 @@ pub(crate) fn generate(
         }
     }
 
-    module.validate_save(&shim_path)?;
+    module.validate_save(shim_path)?;
     Ok(())
 }

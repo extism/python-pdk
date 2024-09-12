@@ -8,7 +8,7 @@ use std::io::Read;
 
 const PRELUDE: &str = include_str!("prelude.py");
 
-fn convert_arg<'a>(py: Python<'a>, arg: Arg) -> PyObject {
+fn convert_arg(py: Python, arg: Arg) -> PyObject {
     match arg {
         Arg::Int(x) => x.to_object(py),
         Arg::Float(f) => f.to_object(py),

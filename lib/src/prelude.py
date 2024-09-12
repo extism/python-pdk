@@ -86,7 +86,7 @@ def import_fn(module, name):
                 print("AFTER")
                 return _read(ret, res)
             else:
-                print("NO RETURN", module, name, idx, args)
+                print("NO RETURN", func, module, name, idx, args)
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper

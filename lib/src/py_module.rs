@@ -37,7 +37,7 @@ pub fn output_str(result: &str) -> PyResult<()> {
 
 #[pyo3::pyfunction]
 pub fn set_error(msg: &str) -> PyResult<()> {
-    let mem = extism_pdk::Memory::from_bytes(&msg).map_err(error)?;
+    let mem = extism_pdk::Memory::from_bytes(msg).map_err(error)?;
     unsafe {
         extism_pdk::extism::error_set(mem.offset());
     }
@@ -218,7 +218,7 @@ pub fn memory_free(mem: MemoryHandle) -> PyResult<()> {
 #[pyo3::pyfunction]
 #[pyo3(name = "alloc")]
 pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
-    let mem = extism_pdk::Memory::from_bytes(&data).map_err(error)?;
+    let mem = extism_pdk::Memory::from_bytes(data).map_err(error)?;
     Ok(MemoryHandle {
         offset: mem.offset(),
         length: mem.len() as u64,
