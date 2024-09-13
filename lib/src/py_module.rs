@@ -356,7 +356,7 @@ pub fn make_extism_ffi_module(py: Python<'_>, module: &Bound<'_, PyModule>) -> P
     Ok(())
 }
 
-#[link(wasm_import_module = "shim")]
+#[link(wasm_import_module = "import_shim")]
 extern "C" {
     // this import will get satisified by the import shim
     fn __invokeHostFunc_0_0(func_idx: u32);

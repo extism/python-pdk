@@ -4,8 +4,10 @@ use wagen::{Instr, ValType};
 pub(crate) fn generate(
     exports: &[String],
     imports: &[Import],
-    shim_path: &std::path::Path,
+    export_shim_path: &std::path::Path,
+    import_shim_path: &std::path::Path,
 ) -> Result<(), Error> {
+    // export shim
     let mut module = wagen::Module::new();
     let invoke = module.import(
         "core",
@@ -26,6 +28,11 @@ pub(crate) fn generate(
             .export(export);
         elements.push(fn_index.index);
     }
+
+    module.validate_save(&export_shim_path)?;
+
+    // import shim
+    let mut module = wagen::Module::new();
 
     let n_imports = imports.len();
     let import_table = module.tables().push(wagen::TableType {
@@ -82,6 +89,7 @@ pub(crate) fn generate(
         wagen::Elements::Functions(&import_elements),
     );
 
-    module.validate_save(&shim_path)?;
+    module.validate_save(&import_shim_path)?;
+
     Ok(())
 }

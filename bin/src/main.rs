@@ -11,6 +11,7 @@ use tempfile::TempDir;
 
 use std::env;
 use std::io::Write;
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
@@ -46,9 +47,13 @@ fn main() -> Result<(), Error> {
     user_code.push_str("\n");
     user_code += INVOKE;
 
-    let tmp_dir = TempDir::new()?;
-    let core_path = tmp_dir.path().join("core.wasm");
-    let shim_path = tmp_dir.path().join("shim.wasm");
+    // let tmp_dir = TempDir::new()?;
+    // let core_path = tmp_dir.path().join("core.wasm");
+    // let shim_path = tmp_dir.path().join("shim.wasm");
+
+    let core_path = Path::new("/Users/ben/py-out/core.wasm");
+    let export_shim_path = Path::new("/Users/ben/py-out/main.wasm");
+    let import_shim_path = Path::new("/Users/ben/py-out/import_shim.wasm");
 
     let self_cmd = env::args().next().expect("Expected a command argument");
     {
@@ -75,7 +80,7 @@ fn main() -> Result<(), Error> {
         anyhow::bail!("No exports found, use __all__ to specify exported functions")
     }
 
-    shim::generate(&exports, &[], &shim_path)?;
+    shim::generate(&exports, &[], &export_shim_path, &import_shim_path)?;
 
     let output = Command::new("wasm-merge")
         .arg("--version")
@@ -90,8 +95,10 @@ fn main() -> Result<(), Error> {
     let status = Command::new("wasm-merge")
         .arg(&core_path)
         .arg("core")
-        .arg(&shim_path)
-        .arg("shim")
+        .arg(&export_shim_path)
+        .arg("main")
+        .arg(&import_shim_path)
+        .arg("import_shim")
         .arg("-o")
         .arg(&opts.output)
         .arg("--enable-reference-types")
