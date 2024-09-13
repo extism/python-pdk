@@ -122,7 +122,6 @@ pub extern "C" fn __arg_f64(arg: f64) {
 
 #[export_name = "wizer.initialize"]
 extern "C" fn init() {
-    println!("{:?}", std::env::var("PYTHONPATH"));
     append_to_inittab!(make_extism_ffi_module);
     pyo3::prepare_freethreaded_python();
     let mut code = String::new();
