@@ -51,13 +51,22 @@ impl<'a> Optimizer<'a> {
     }
 
     pub fn write_optimized_wasm(self, dest: impl AsRef<Path>) -> Result<(), Error> {
+        let python_path = std::env::var("PYTHONPATH").unwrap_or_else(|_| String::from("."));
+        let paths: Vec<&str> = python_path.split(':').collect();
         if self.wizen {
-            let wasm = Wizer::new()
-                .allow_wasi(true)?
+            let mut w = Wizer::new();
+            w.allow_wasi(true)?
                 .inherit_stdio(true)
+                .inherit_env(true)
                 .wasm_bulk_memory(true)
-                .map_dir("/usr", find_deps())
-                .run(self.wasm)?;
+                .map_dir("/usr", find_deps());
+            for path in paths {
+                if path.is_empty() {
+                    continue;
+                }
+                w.map_dir(path, path);
+            }
+            let wasm = w.run(self.wasm)?;
             std::fs::write(&dest, wasm)?;
         } else {
             std::fs::write(&dest, self.wasm)?;
