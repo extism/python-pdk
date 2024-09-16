@@ -33,7 +33,7 @@ jobs:
 
       - name: Update deps (Linux)
         run: |
-          go install github.com/extism/cli/extism@main
+          go install github.com/extism/cli/extism@c1eb1fc
           cd /tmp
           # get just wasm-merge and wasm-opt
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-linux.tar.gz > binaryen.tar.gz
@@ -45,7 +45,7 @@ jobs:
       - name: Update deps (Windows)
         run: |
           powershell -executionpolicy bypass -File .\install-wasi-sdk.ps1
-          go install github.com/extism/cli/extism@main
+          go install github.com/extism/cli/extism@c1eb1fc
           Remove-Item -Recurse -Path "c:\Program files\Binaryen" -Force -ErrorAction SilentlyContinue > $null 2>&1
           New-Item -ItemType Directory -Force -Path "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
           Invoke-WebRequest -Uri "https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-windows.tar.gz" -OutFile "$env:TMP\binaryen-version_116-x86_64-windows.tar.gz"
