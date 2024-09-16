@@ -43,6 +43,8 @@ def _alloc(x):
         return ffi.memory.alloc(x.encode()).offset
     elif isinstance(x, bytes):
         return ffi.memory.alloc(x).offset
+    elif isinstance(x, dict):
+        return ffi.memory.alloc(json.dumps(x)).offset
     elif isinstance(x, Codec):
         return ffi.memory.alloc(x.encode()).offset
     elif isinstance(x, ffi.memory.MemoryHandle):
@@ -65,8 +67,12 @@ def _read(t, x):
         return ffi.memory.string(mem)
     elif t == bytes:
         return ffi.memory.bytes(mem)
+    elif t == dict:
+        return json.loads(ffi.memory.string(mem))
     elif t == Json:
         return Json.decode(ffi.memory.bytes(mem))
+    elif t == ffi.memory.MemoryHandle:
+        return mem
     else:
         raise Exception(f"Unsupported python type: {t}")
 
