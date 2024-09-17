@@ -12,15 +12,15 @@ def __invoke(index, shared, *args):
             argnames = f.__code__.co_varnames
             for i, arg in enumerate(args):
                 t = f.__annotations__.get(argnames[i], extism.memory.MemoryHandle)
-                a.append(extism._read(t, arg))
+                a.append(extism._load(t, arg))
         else:
-            a = [extism._alloc(x) for x in args]
+            a = [extism._store(x) for x in args]
 
         res = f(*a)
         if shared and res is not None:
-            return extism._alloc(res)
+            return extism._store(res)
         if res is not None and "return" in f.__annotations__:
-            return extism._read(f.__annotations__["return"], res)
+            return extism._load(f.__annotations__["return"], res)
         else:
             return res
     except BaseException as exc:
