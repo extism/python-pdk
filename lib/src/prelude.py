@@ -9,6 +9,7 @@ input_str = ffi.input_str
 input_bytes = ffi.input_bytes
 output_str = ffi.output_str
 output_bytes = ffi.output_bytes
+memory = ffi.memory
 
 HttpRequest = ffi.HttpRequest
 
@@ -44,11 +45,11 @@ def _alloc(x):
     elif isinstance(x, bytes):
         return ffi.memory.alloc(x).offset
     elif isinstance(x, dict):
-        return ffi.memory.alloc(json.dumps(x)).offset
+        return ffi.memory.alloc(json.dumps(x).encode()).offset
     elif isinstance(x, Codec):
         return ffi.memory.alloc(x.encode()).offset
     elif isinstance(x, ffi.memory.MemoryHandle):
-        return a
+        return a.offset
     elif isinstance(x, int):
         return x
     else:
@@ -92,6 +93,7 @@ def import_fn(module, name):
                 ffi.__invoke_host_func0(idx, *args)
 
         return wrapper
+
     IMPORT_INDEX += 1
     return inner
 
@@ -106,16 +108,12 @@ def plugin_fn(func):
     return inner
 
 
-def shared_fn(func):
+def shared_fn(f):
     global __exports
-    __exports.append(func)
+    __exports.append(f)
 
     def inner(*args):
-        args = [_alloc(a) for a in args]
-        res = func(*args)
-        if "return" in func.__annotations__:
-            ret = func.__annotations__["return"]
-            return _read(ret, res)
+        return f(*args)
 
     return inner
 

@@ -28,6 +28,7 @@ struct Import {
 #[derive(Debug, Clone)]
 struct Export {
     name: String,
+    is_plugin_fn: bool,
     params: Vec<wagen::ValType>,
     results: Vec<wagen::ValType>,
 }

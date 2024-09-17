@@ -58,6 +58,7 @@ fn get_export<R: std::fmt::Debug>(
     }
     Ok(Export {
         name: func,
+        is_plugin_fn,
         params: vec![wagen::ValType::I64; n_args],
         results: if is_plugin_fn {
             vec![wagen::ValType::I32]

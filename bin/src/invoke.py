@@ -1,16 +1,30 @@
 import traceback
 
 
-def __invoke(*args):
+def __invoke(index, shared, *args):
     import extism
 
-    index = args[0]
-    a = args[1:]
-
     try:
-        return extism.__exports[index](*a)
+        f = extism.__exports[index]
+
+        if shared:
+            a = []
+            argnames = f.__code__.co_varnames
+            for i, arg in enumerate(args):
+                t = f.__annotations__.get(argnames[i], extism.memory.MemoryHandle)
+                a.append(extism._read(t, arg))
+        else:
+            a = [extism._alloc(x) for x in args]
+
+        res = f(*a)
+        if shared and res is not None:
+            return extism._alloc(res)
+        if res is not None and "return" in f.__annotations__:
+            return extism._read(f.__annotations__["return"], res)
+        else:
+            return res
     except BaseException as exc:
         tb = "".join(traceback.format_tb(exc.__traceback__))
         err = f"{str(exc)}:\n{tb}"
         extism.ffi.set_error(err)
-        return 1
+        raise exc

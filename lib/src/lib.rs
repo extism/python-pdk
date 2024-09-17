@@ -16,7 +16,7 @@ fn convert_arg(py: Python, arg: Arg) -> PyObject {
 }
 
 #[no_mangle]
-pub extern "C" fn __invoke(index: u32) {
+pub extern "C" fn __invoke(index: u32, shared: bool) {
     Python::with_gil(|py| -> PyResult<()> {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
@@ -24,6 +24,7 @@ pub extern "C" fn __invoke(index: u32) {
             .into_iter()
             .map(|x| convert_arg(py, x))
             .collect();
+        args.insert(0, shared.to_object(py));
         args.insert(0, index.to_object(py));
         let args = PyTuple::new_bound(py, args);
         let m = PyModule::import_bound(py, "extism_plugin")?;
@@ -35,7 +36,7 @@ pub extern "C" fn __invoke(index: u32) {
 }
 
 #[no_mangle]
-pub extern "C" fn __invoke_i32(index: u32) -> i32 {
+pub extern "C" fn __invoke_i32(index: u32, shared: bool) -> i32 {
     Python::with_gil(|py| -> PyResult<i32> {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
@@ -43,6 +44,7 @@ pub extern "C" fn __invoke_i32(index: u32) -> i32 {
             .into_iter()
             .map(|x| convert_arg(py, x))
             .collect();
+        args.insert(0, shared.to_object(py));
         args.insert(0, index.to_object(py));
         let args = PyTuple::new_bound(py, args);
         let m = PyModule::import_bound(py, "extism_plugin")?;
@@ -57,7 +59,7 @@ pub extern "C" fn __invoke_i32(index: u32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn __invoke_i64(index: u32) -> i64 {
+pub extern "C" fn __invoke_i64(index: u32, shared: bool) -> i64 {
     Python::with_gil(|py| -> PyResult<i64> {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
@@ -65,6 +67,7 @@ pub extern "C" fn __invoke_i64(index: u32) -> i64 {
             .into_iter()
             .map(|x| convert_arg(py, x))
             .collect();
+        args.insert(0, shared.to_object(py));
         args.insert(0, index.to_object(py));
         let args = PyTuple::new_bound(py, args);
         let m = PyModule::import_bound(py, "extism_plugin")?;

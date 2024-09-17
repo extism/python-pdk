@@ -22,13 +22,19 @@ pub(crate) fn generate(
     let __arg_f32 = module.import("core", "__arg_f32", None, [ValType::F32], []);
     let __arg_f64 = module.import("core", "__arg_f64", None, [ValType::F64], []);
 
-    let __invoke = module.import("core", "__invoke", None, [wagen::ValType::I32], []);
+    let __invoke = module.import(
+        "core",
+        "__invoke",
+        None,
+        [wagen::ValType::I32, wagen::ValType::I32],
+        [],
+    );
 
     let __invoke_i64 = module.import(
         "core",
         "__invoke_i64",
         None,
-        [wagen::ValType::I32],
+        [wagen::ValType::I32, wagen::ValType::I32],
         [wagen::ValType::I64],
     );
 
@@ -36,7 +42,7 @@ pub(crate) fn generate(
         "core",
         "__invoke_i32",
         None,
-        [wagen::ValType::I32],
+        [wagen::ValType::I32, wagen::ValType::I32],
         [wagen::ValType::I32],
     );
 
@@ -123,6 +129,7 @@ pub(crate) fn generate(
         }
 
         builder.push(Instr::I32Const(index as i32));
+        builder.push(Instr::I32Const(!export.is_plugin_fn as i32));
         match export.results.first() {
             None => {
                 builder.push(Instr::Call(__invoke.index()));
