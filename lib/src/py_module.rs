@@ -1,7 +1,7 @@
 use pyo3::{
     exceptions::PyException,
     prelude::*,
-    types::{PyBytes, PyList, PyListMethods, PyModule},
+    types::{PyBytes, PyInt, PyModule, PyTuple},
     PyErr, PyResult,
 };
 
@@ -37,7 +37,7 @@ pub fn output_str(result: &str) -> PyResult<()> {
 
 #[pyo3::pyfunction]
 pub fn set_error(msg: &str) -> PyResult<()> {
-    let mem = extism_pdk::Memory::from_bytes(&msg).map_err(error)?;
+    let mem = extism_pdk::Memory::from_bytes(msg).map_err(error)?;
     unsafe {
         extism_pdk::extism::error_set(mem.offset());
     }
@@ -218,7 +218,7 @@ pub fn memory_free(mem: MemoryHandle) -> PyResult<()> {
 #[pyo3::pyfunction]
 #[pyo3(name = "alloc")]
 pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
-    let mem = extism_pdk::Memory::from_bytes(&data).map_err(error)?;
+    let mem = extism_pdk::Memory::from_bytes(data).map_err(error)?;
     Ok(MemoryHandle {
         offset: mem.offset(),
         length: mem.len() as u64,
@@ -226,11 +226,11 @@ pub fn memory_alloc(data: &[u8]) -> PyResult<MemoryHandle> {
 }
 
 #[pyfunction]
-#[pyo3(signature = (index, *args))]
+#[pyo3(signature = (i, *args))]
 #[pyo3(name = "__invoke_host_func")]
-fn invoke_host_func(index: u32, args: &Bound<'_, PyList>) -> PyResult<Option<MemoryHandle>> {
+fn invoke_host_func(i: &Bound<'_, PyInt>, args: &Bound<'_, PyTuple>) -> PyResult<u64> {
     let length = args.len();
-
+    let index = i.extract::<'_, u32>()?;
     let offs = unsafe {
         match length {
             0 => __invokeHostFunc_0_1(index),
@@ -269,21 +269,15 @@ fn invoke_host_func(index: u32, args: &Bound<'_, PyList>) -> PyResult<Option<Mem
         }
     };
 
-    if let Some(mem) = extism_pdk::Memory::find(offs) {
-        Ok(Some(MemoryHandle {
-            offset: mem.offset(),
-            length: mem.len() as u64,
-        }))
-    } else {
-        Ok(None)
-    }
+    Ok(offs)
 }
 
 #[pyfunction]
 #[pyo3(signature = (index, *args))]
 #[pyo3(name = "__invoke_host_func0")]
-fn invoke_host_func0(index: u32, args: &Bound<'_, PyList>) -> PyResult<()> {
+fn invoke_host_func0(index: &Bound<'_, PyInt>, args: &Bound<'_, PyTuple>) -> PyResult<()> {
     let length = args.len();
+    let index = index.extract::<'_, u32>()?;
 
     unsafe {
         match length {

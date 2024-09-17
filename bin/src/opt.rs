@@ -12,6 +12,10 @@ pub(crate) struct Optimizer<'a> {
 }
 
 fn find_deps() -> PathBuf {
+    if let Ok(path) = std::env::var("EXTISM_PYTHON_USR_DIR") {
+        return PathBuf::from(path);
+    }
+
     let in_repo = PathBuf::from("../lib/target/wasm32-wasi/wasi-deps/usr");
     if in_repo.exists() {
         return in_repo;
@@ -47,13 +51,22 @@ impl<'a> Optimizer<'a> {
     }
 
     pub fn write_optimized_wasm(self, dest: impl AsRef<Path>) -> Result<(), Error> {
+        let python_path = std::env::var("PYTHONPATH").unwrap_or_else(|_| String::from("."));
+        let paths: Vec<&str> = python_path.split(':').collect();
         if self.wizen {
-            let wasm = Wizer::new()
-                .allow_wasi(true)?
+            let mut w = Wizer::new();
+            w.allow_wasi(true)?
                 .inherit_stdio(true)
+                .inherit_env(true)
                 .wasm_bulk_memory(true)
-                .map_dir("/usr", find_deps())
-                .run(self.wasm)?;
+                .map_dir("/usr", find_deps());
+            for path in paths {
+                if path.is_empty() {
+                    continue;
+                }
+                w.map_dir(path, path);
+            }
+            let wasm = w.run(self.wasm)?;
             std::fs::write(&dest, wasm)?;
         } else {
             std::fs::write(&dest, self.wasm)?;
@@ -80,7 +93,7 @@ pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>) -> Result<(), Error> {
         .arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
         .arg("--strip")
-        .arg("-O3")
+        .arg("-O2")
         .arg(dest.as_ref())
         .arg("-o")
         .arg(dest.as_ref())

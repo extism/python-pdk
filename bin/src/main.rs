@@ -9,6 +9,7 @@ use options::Options;
 use structopt::StructOpt;
 use tempfile::TempDir;
 
+use std::borrow::Cow;
 use std::env;
 use std::io::Write;
 use std::process::{Command, Stdio};
@@ -16,9 +17,18 @@ use std::process::{Command, Stdio};
 const CORE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/core.wasm"));
 const INVOKE: &str = include_str!("invoke.py");
 
+#[derive(Debug, Clone)]
 struct Import {
     module: String,
     name: String,
+    params: Vec<wagen::ValType>,
+    results: Vec<wagen::ValType>,
+}
+
+#[derive(Debug, Clone)]
+struct Export {
+    name: String,
+    is_plugin_fn: bool,
     params: Vec<wagen::ValType>,
     results: Vec<wagen::ValType>,
 }
@@ -33,17 +43,22 @@ fn main() -> Result<(), Error> {
 
     // Parse CLI arguments
     let opts = Options::from_args();
+    let core: Cow<[u8]> = if let Ok(path) = std::env::var("EXTISM_ENGINE_PATH") {
+        Cow::Owned(std::fs::read(path)?)
+    } else {
+        Cow::Borrowed(CORE)
+    };
 
     // Generate core module if `core` flag is set
     if opts.core {
-        opt::Optimizer::new(CORE)
+        opt::Optimizer::new(&core)
             .wizen(true)
             .write_optimized_wasm(opts.output)?;
         return Ok(());
     }
 
     let mut user_code = std::fs::read_to_string(&opts.input_py)?;
-    user_code.push_str("\n");
+    user_code.push('\n');
     user_code += INVOKE;
 
     let tmp_dir = TempDir::new()?;
@@ -70,12 +85,14 @@ fn main() -> Result<(), Error> {
         }
     }
 
-    let exports = py::find_exports(user_code)?;
+    let (imports, exports) = py::find_imports_and_exports(user_code)?;
     if exports.is_empty() {
-        anyhow::bail!("No exports found, use __all__ to specify exported functions")
+        anyhow::bail!(
+            "No exports found, use the @extism.plugin_fn decorator to specify exported functions"
+        )
     }
 
-    shim::generate(&exports, &[], &shim_path)?;
+    shim::generate(&exports, &imports, &shim_path)?;
 
     let output = Command::new("wasm-merge")
         .arg("--version")
