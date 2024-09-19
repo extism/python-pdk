@@ -26,7 +26,7 @@ def bin_dir() -> Path:
     if system in ["linux", "darwin"]:
         return home / ".local" / "bin"
     elif system == "windows":
-        return Path(os.getenv("APPDATA")) / "Python" / "Scripts"
+        return Path(os.getenv("USERHOME"))
     else:
         raise OSError(f"Unsupported OS {system}")
 
@@ -40,6 +40,13 @@ def data_dir() -> Path:
         return Path(os.getenv("APPDATA")) / "extism-py"
     else:
         raise OSError(f"Unsupported OS {system}")
+
+
+def exe_file() -> str:
+    if system == "windows":
+        return "extism-py.exe"
+    else:
+        return "extism-py"
 
 
 def run_subprocess(command, cwd=None, quiet=False):
@@ -78,7 +85,7 @@ def do_build(args):
     check_rust_installed()
     run_subprocess(["cargo", "build", "--release"], cwd="./lib", quiet=args.quiet)
     run_subprocess(["cargo", "build", "--release"], cwd="./bin", quiet=args.quiet)
-    shutil.copy2(Path("./bin/target/release/extism-py"), Path("./extism-py"))
+    shutil.copy2(Path("./bin/target/release") / exe_file(), Path(".") / exe_file())
     logging.info("Build completed successfully.")
 
 
@@ -89,16 +96,16 @@ def do_install(args):
     bin_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-    dest_path = bin_dir / "extism-py"
+    dest_path = bin_dir / exe_file()
     logging.info(f"Copying binary to {dest_path}")
-    shutil.copy2(Path("./bin/target/release/extism-py"), dest_path)
+    shutil.copy2(Path("./bin/target/release") / exe_file(), dest_path)
 
     logging.info(f"Copying data files to {data_dir}")
     shutil.copytree(
         Path("./lib/target/wasm32-wasi/wasi-deps/usr"), data_dir, dirs_exist_ok=True
     )
 
-    logging.info(f"extism-py installed to {bin_dir}")
+    logging.info(f"{exe_file()} installed to {bin_dir}")
     logging.info(f"Data files installed to {data_dir}")
     logging.info("Installation completed successfully.")
 
@@ -107,15 +114,15 @@ def do_clean(args):
     logging.info("Cleaning build artifacts...")
     shutil.rmtree("./lib/target", ignore_errors=True)
     shutil.rmtree("./bin/target", ignore_errors=True)
-    if Path("./extism-py").exists():
-        Path("./extism-py").unlink()
+    if (Path(".") / exe_file()).exists():
+        (Path(".") / exe_file()).unlink()
     logging.info("Clean completed successfully.")
 
 
 def get_version():
     try:
         result = subprocess.run(
-            ["extism-py", "--version"], capture_output=True, text=True, check=True
+            [exe_file(), "--version"], capture_output=True, text=True, check=True
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
