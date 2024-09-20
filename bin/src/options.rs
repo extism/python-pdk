@@ -7,6 +7,8 @@ pub struct Options {
     #[structopt(parse(from_os_str))]
     pub input_py: PathBuf,
 
+    // #[structopt(parse(from_os_str))]
+    // pub other_files: Vec<PathBuf>,
     #[structopt(short = "o", parse(from_os_str), default_value = "index.wasm")]
     pub output: PathBuf,
 
