@@ -39,25 +39,26 @@ class Codec(ABC):
 
 
 class JSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, bytes):
-            return o.decode("base64")
-        elif isinstance(o, datetime):
-            return json.JSONEncoder.default(self, o.isoformat())
-        elif isinstance(o, Json):
+    def encode(self, o):
+        if isinstance(0, Json):
             return o.encode()
-        return json.JSONEncoder.default(self, o)
+        elif isinstance(o, bytes):
+            return Json.encode(o.decode("base64"))
+        elif isinstance(o, datetime):
+            return Json.encode(o.isoformat())
+        return json.JSONEncoder.encode(self, o)
 
 
 class JSONDecoder(json.JSONDecoder):
-    def default(self, o):
+    def decode(self, s):
+        o = json.JSONDecoder.decode(self, s)
         if isinstance(o, bytes):
             return o.encode("base64")
         elif isinstance(o, datetime):
             return datetime.fromisoformat(o)
         elif isinstance(o, Json):
-            return Json.decode(o.encode())
-        return json.JSONDecoder.default(self, o)
+            return Json.decode(s)
+        return json.JSONDecoder.decode(self, o)
 
 
 class Json(Codec):
