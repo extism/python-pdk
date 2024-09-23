@@ -54,11 +54,16 @@ class JSONDecoder(json.JSONDecoder):
         o = json.JSONDecoder.decode(self, s)
         if isinstance(o, bytes):
             return o.encode("base64")
-        elif isinstance(o, datetime):
+
+        try:
             return datetime.fromisoformat(o)
-        elif isinstance(o, Json):
+        except:
+            pass
+
+        try:
             return Json.decode(s)
-        return json.JSONDecoder.decode(self, o)
+        except:
+            return o
 
 
 class Json(Codec):
