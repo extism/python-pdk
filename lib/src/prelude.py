@@ -2,6 +2,7 @@ from typing import Union, Optional
 import json
 from enum import Enum
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 import extism_ffi as ffi
 
@@ -37,16 +38,38 @@ class Codec(ABC):
         raise Exception("encode not implemented")
 
 
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            return o.decode("base64")
+        elif isinstance(o, datetime):
+            return json.JSONEncoder.default(self, o.isoformat())
+        elif isinstance(o, Json):
+            return o.encode()
+        return json.JSONEncoder.default(self, o)
+
+
+class JSONDecoder(json.JSONDecoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            return o.encode("base64")
+        elif isinstance(o, datetime):
+            return datetime.fromisoformat(o)
+        elif isinstance(o, Json):
+            return Json.decode(o.encode())
+        return json.JSONDecoder.default(self, o)
+
+
 class Json(Codec):
     def encode(self) -> bytes:
         v = self
         if not isinstance(self, dict) and hasattr(self, "__dict__"):
             v = self.__dict__
-        return json.dumps(v).encode()
+        return json.dumps(v, cls=JSONEncoder).encode()
 
     @classmethod
     def decode(cls, s: bytes):
-        return cls(**json.loads(s.decode()))
+        return cls(**json.loads(s.decode(), cls=JSONDecoder))
 
 
 class JsonObject(Json, dict):
