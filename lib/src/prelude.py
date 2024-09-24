@@ -175,13 +175,19 @@ def shared_fn(f):
 
 def input_json(t: Optional[type] = None):
     """Get input as JSON"""
-    if t is not None:
-        return json.loads(input_str(), object_hook=lambda x: t(**x), cls=JSONDecoder)
-    return json.loads(input_str())
+    if t is int or t is float:
+        return t(json.loads(input_str()))
+    if issubclass(t, Json):
+        return t(**json.loads(input_str(), cls=JSONDecoder))
+    return json.loads(input_str(), cls=JSONDecoder)
 
 
 def output_json(x):
     """Set JSON output"""
+    if isinstance(x, int) or isinstance(x, float):
+        output_str(json.dumps(str(x)))
+        return
+    
     if hasattr(x, "__dict__"):
         x = x.__dict__
     output_str(json.dumps(x, cls=JSONEncoder))
