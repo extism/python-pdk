@@ -46,7 +46,7 @@ class JSONEncoder(json.JSONEncoder):
             return b64encode(o).decode()
         elif isinstance(o, datetime):
             return o.isoformat()
-        return json.JSONEncoder.encode(self, o)
+        return self.super().encode(o)
 
 
 class JSONDecoder(json.JSONDecoder):
@@ -67,14 +67,18 @@ class JSONDecoder(json.JSONDecoder):
                     continue
                 except:
                     pass
+
+            if isinstance(v, dict):
+                dct[k] = self.object_hook(v)
         return dct
 
 
 class Json(Codec):
     def encode(self) -> bytes:
         v = self
-        if not isinstance(self, dict) and hasattr(self, "__dict__"):
-            v = self.__dict__
+        if not isinstance(self, (dict, datetime, bytes)) and hasattr(self, "__dict__"):
+            if len(self.__dict__) > 0:
+                v = self.__dict__
         return json.dumps(v, cls=JSONEncoder).encode()
 
     @classmethod
@@ -176,7 +180,7 @@ def shared_fn(f):
 def input_json(t: Optional[type] = None):
     """Get input as JSON"""
     if t is int or t is float:
-        return t(json.loads(input_str()))
+        return t(json.loads(input_str(), cls=JSONDecoder))
     if issubclass(t, Json):
         return t(**json.loads(input_str(), cls=JSONDecoder))
     return json.loads(input_str(), cls=JSONDecoder)
@@ -187,7 +191,7 @@ def output_json(x):
     if isinstance(x, int) or isinstance(x, float):
         output_str(json.dumps(str(x)))
         return
-    
+
     if hasattr(x, "__dict__"):
         x = x.__dict__
     output_str(json.dumps(x, cls=JSONEncoder))
@@ -247,7 +251,7 @@ class Var:
         x = Var.get_str(key)
         if x is None:
             return x
-        return json.loads(x)
+        return json.loads(x, cls=JSONDecoder)
 
     @staticmethod
     def set(key: str, value: Union[bytes, str]):
@@ -269,7 +273,7 @@ class Config:
         x = ffi.config_get(key)
         if x is None:
             return None
-        return json.loads(x)
+        return json.loads(x, cls=JSONDecoder)
 
 
 class HttpResponse:
@@ -293,7 +297,7 @@ class HttpResponse:
 
     def data_json(self):
         """Get response body JSON"""
-        return json.loads(self.data_str())
+        return json.loads(self.data_str(), cls=JSONDecoder)
 
 
 class Http:
