@@ -39,31 +39,35 @@ class Codec(ABC):
 
 
 class JSONEncoder(json.JSONEncoder):
-    def encode(self, o):
-        if isinstance(0, Json):
+    def default(self, o):
+        if isinstance(o, Json):
             return o.encode()
         elif isinstance(o, bytes):
-            return Json.encode(o.decode("base64"))
+            return b64encode(o).decode()
         elif isinstance(o, datetime):
-            return Json.encode(o.isoformat())
+            return o.isoformat()
         return json.JSONEncoder.encode(self, o)
 
 
 class JSONDecoder(json.JSONDecoder):
-    def decode(self, s):
-        o = json.JSONDecoder.decode(self, s)
-        if isinstance(o, bytes):
-            return o.encode("base64")
+    def __init__(self, *args, **kwargs):
+        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
 
-        try:
-            return datetime.fromisoformat(o)
-        except:
-            pass
+    def object_hook(self, dct):
+        for k, v in dct.items():
+            if isinstance(v, str):
+                try:
+                    dct[k] = datetime.fromisoformat(v)
+                    continue
+                except:
+                    pass
 
-        try:
-            return Json.decode(s)
-        except:
-            return o
+                try:
+                    dct[k] = b64decode(v)
+                    continue
+                except:
+                    pass
+        return dct
 
 
 class Json(Codec):
@@ -75,7 +79,8 @@ class Json(Codec):
 
     @classmethod
     def decode(cls, s: bytes):
-        return cls(**json.loads(s.decode(), cls=JSONDecoder))
+        x = json.loads(s.decode(), cls=JSONDecoder)
+        return cls(**x)
 
 
 class JsonObject(Json, dict):
@@ -88,7 +93,7 @@ def _store(x) -> int:
     elif isinstance(x, bytes):
         return ffi.memory.alloc(x).offset
     elif isinstance(x, dict) or isinstance(x, list):
-        return ffi.memory.alloc(json.dumps(x).encode()).offset
+        return ffi.memory.alloc(json.dumps(x, cls=JSONEncoder).encode()).offset
     elif isinstance(x, Codec):
         return ffi.memory.alloc(x.encode()).offset
     elif isinstance(x, ffi.memory.MemoryHandle):
@@ -114,7 +119,7 @@ def _load(t, x):
     elif t is bytes:
         return ffi.memory.bytes(mem)
     elif t is dict or t is list:
-        return json.loads(ffi.memory.string(mem))
+        return json.loads(ffi.memory.string(mem), cls=JSONDecoder)
     elif issubclass(t, Codec):
         return t.decode(ffi.memory.bytes(mem))
     elif t is ffi.memory.MemoryHandle:
@@ -171,7 +176,7 @@ def shared_fn(f):
 def input_json(t: Optional[type] = None):
     """Get input as JSON"""
     if t is not None:
-        return json.loads(input_str(), object_hook=lambda x: t(**x))
+        return json.loads(input_str(), object_hook=lambda x: t(**x), cls=JSONDecoder)
     return json.loads(input_str())
 
 
@@ -179,7 +184,7 @@ def output_json(x):
     """Set JSON output"""
     if hasattr(x, "__dict__"):
         x = x.__dict__
-    output_str(json.dumps(x))
+    output_str(json.dumps(x, cls=JSONEncoder))
 
 
 def input(t: type = None):
@@ -192,7 +197,7 @@ def input(t: type = None):
     elif issubclass(t, Codec):
         return t.decode(input_bytes())
     elif t is dict or t is list:
-        return json.loads(input_str())
+        return json.loads(input_str(), cls=JSONDecoder)
     elif issubclass(t, Enum):
         return t(input_str())
     else:
