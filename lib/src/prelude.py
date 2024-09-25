@@ -4,6 +4,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from datetime import datetime
 from base64 import b64encode, b64decode
+from dataclasses import is_dataclass
 
 import extism_ffi as ffi
 
@@ -131,7 +132,10 @@ class Json(Codec):
     @classmethod
     def decode(cls, s: bytes):
         x = json.loads(s.decode(), cls=JSONDecoder)
-        return cls(**x)._fix_fields()
+        if is_dataclass(cls):
+            return cls(**x)
+        else:
+            return cls(**x)._fix_fields()
 
 
 class JsonObject(Json, dict):
