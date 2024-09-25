@@ -25,7 +25,7 @@ IMPORT_INDEX = 0
 class Codec(ABC):
     """
     Codec is used to serialize and deserialize values in Extism memory
-    """
+    """      
 
     @abstractmethod
     def encode(self) -> bytes:
@@ -37,6 +37,24 @@ class Codec(ABC):
     def decode(s: bytes):
         """Decode a value from bytes"""
         raise Exception("encode not implemented")
+
+    def _fix_fields(self):
+        if not hasattr(self, '__dict__'):
+            return
+        types = self.__annotations__
+        for k, v in self.__dict__.items():
+            if k in types:
+                setattr(self, k, self._fix_field(types[k], k, v))
+        return self
+    
+    def _fix_field(self, ty: type, k, v):
+        try:
+            if isinstance(v, dict) and issubclass(ty, Codec):
+                return ty(**v)._fix_fields()
+        except Exception as _:
+            pass
+
+        return v
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -84,7 +102,7 @@ class Json(Codec):
     @classmethod
     def decode(cls, s: bytes):
         x = json.loads(s.decode(), cls=JSONDecoder)
-        return cls(**x)
+        return cls(**x)._fix_fields()
 
 
 class JsonObject(Json, dict):
