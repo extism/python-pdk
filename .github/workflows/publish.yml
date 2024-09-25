@@ -130,8 +130,11 @@ jobs:
           EXTISM_ENGINE_PATH: core.wasm
         run: cd bin && cargo build --release --target ${{ matrix.target }} --package extism-py
 
+      - name: Create directory structure
+        run: mkdir -p usr/bin && mv lib/target/wasm32-wasi/wasi-deps/usr usr/share && mv ${{ matrix.path }} usr/bin/
+
       - name: Archive assets
-        run: mv wasi-deps/usr share && tar czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.path }} share
+        run: tar czf ${{ matrix.asset_name }}.tar.gz usr
 
       - name: Upload assets to artifacts
         uses: actions/upload-artifact@v4
