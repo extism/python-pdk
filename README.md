@@ -12,6 +12,17 @@ This PDK uses [PyO3](https://github.com/PyO3/pyo3) and [wizer](https://github.co
 
 We release the compiler as native binaries you can download and run. Check the [releases](https://github.com/extism/python-pdk/releases) page for the latest.
 
+## Install Script
+
+### Linux, macOS
+
+```bash
+curl -O https://raw.githubusercontent.com/extism/python-pdk/main/install.sh
+sh install.sh
+```
+
+This will install `extism-py` (and `wasm-merge`/`wasm-opt` if not already installed) to `$HOME/.local/bin` and create `$HOME/.local/share/extism-py`
+
 ### Testing the Install
 
 > *Note*: [Binaryen](https://github.com/WebAssembly/binaryen), specifically the `wasm-merge` and `wasm-opt` tools
