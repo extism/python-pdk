@@ -51,6 +51,8 @@ class Codec(ABC):
         try:
             if isinstance(v, dict) and issubclass(ty, Codec):
                 return ty(**v)._fix_fields()
+            elif isinstance(v, str) and issubclass(ty, Enum):
+                return ty(v)
         except Exception as _:
             pass
 
@@ -65,6 +67,8 @@ class JSONEncoder(json.JSONEncoder):
             return b64encode(o).decode()
         elif isinstance(o, datetime):
             return o.isoformat()
+        elif isinstance(o, Enum):
+            return str(o.value)
         return self.super().encode(o)
 
 
@@ -118,6 +122,8 @@ def _store(x) -> int:
         return ffi.memory.alloc(json.dumps(x, cls=JSONEncoder).encode()).offset
     elif isinstance(x, Codec):
         return ffi.memory.alloc(x.encode()).offset
+    elif isinstance(x, Enum):
+        return ffi.memory.alloc(str(x.value).encode()).offset
     elif isinstance(x, ffi.memory.MemoryHandle):
         return x.offset
     elif isinstance(x, int):
@@ -144,6 +150,8 @@ def _load(t, x):
         return json.loads(ffi.memory.string(mem), cls=JSONDecoder)
     elif issubclass(t, Codec):
         return t.decode(ffi.memory.bytes(mem))
+    elif issubclass(t, Enum):
+        return t(ffi.memory.string(mem))
     elif t is ffi.memory.MemoryHandle:
         return mem
     elif t is type(None):
