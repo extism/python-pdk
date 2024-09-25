@@ -48,7 +48,7 @@ class Codec(ABC):
         self._fix_fields()
 
     def _fix_fields(self):
-        if not hasattr(self, '__dict__'):
+        if not hasattr(self, '__annotations__'):
             return
         types = self.__annotations__
         for k, v in self.__dict__.items():
