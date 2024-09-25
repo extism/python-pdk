@@ -27,6 +27,8 @@ mv extism-py/share/extism-py $HOME/.local/share
 chmod +x $HOME/.local/bin/extism-py
 rm -r /tmp/extism-py.tar.gz extism-py
 
+echo "extism-py installed to $HOME/.local/bin/extism-py"
+
 if ! which "wasm-merge" > /dev/null || ! which "wasm-opt" > /dev/null; then
   echo 'Missing binaryen tool(s)'
 
