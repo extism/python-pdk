@@ -132,10 +132,10 @@ jobs:
         run: cd bin && cargo build --release --target ${{ matrix.target }} --package extism-py
 
       - name: Create directory structure
-        run: mkdir -p extism-py/usr/bin extism-py/usr/share && mv wasi-deps/usr extism-py/usr/share/extism-py && mv ${{ matrix.path }} extism-py/usr/bin/
+        run: mkdir -p usr/bin usr/share && mv wasi-deps/usr usr/share/extism-py && mv ${{ matrix.path }} usr/bin/
 
       - name: Archive assets
-        run: tar czf ${{ matrix.asset_name }}.tar.gz extism-py
+        run: tar czf ${{ matrix.asset_name }}.tar.gz usr
 
       - name: Upload assets to artifacts
         uses: actions/upload-artifact@v4
