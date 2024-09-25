@@ -1,0 +1,35 @@
+name: "CI Install Script"
+
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+          - name: macos
+            os: macos-latest
+          # - name: windows
+          #   os: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Test Install Script (Linux)
+      run: |
+        sh install.sh
+        ~/.local/bin/extism-py --version
+      if: runner.os != 'Windows'
+
+    # - name: Test Install Script Part1 (Windows)
+    #   run: |
+    #     powershell -executionpolicy bypass -File .\install-windows.ps1
+    #   if: runner.os == 'Windows'
+
+    # - name: Test Install Script Part2 (Windows)
+    #   run: |
+    #     $env:Path = "C:\Program Files\Extism\;C:\Program Files\Binaryen\;" + $env:Path
+    #     extism-py --version
+    #   if: runner.os == 'Windows'
