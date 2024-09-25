@@ -50,10 +50,10 @@ class Codec(ABC):
     def _fix_fields(self):
         if not hasattr(self, '__annotations__'):
             return
-        types = self.__annotations__
-        for k, v in self.__dict__.items():
-            if k in types:
-                setattr(self, k, self._fix_field(types[k], v))
+        for k in self.__annotations__:
+            ty = self.__annotations__[k]
+            v = getattr(self, k)
+            setattr(self, k, self._fix_field(ty, v))
         return self
     
     def _fix_field(self, ty: type, v):
@@ -76,14 +76,18 @@ class Codec(ABC):
 class JSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Json):
-            return o.encode()
+            return json.loads(o.encode().decode())
         elif isinstance(o, bytes):
             return b64encode(o).decode()
         elif isinstance(o, datetime):
             return o.isoformat()
         elif isinstance(o, Enum):
             return str(o.value)
-        return self.super().encode(o)
+        elif isinstance(o, list):
+            return [self.default(x) for x in o]
+        elif isinstance(o, dict):
+            return {k: self.default(x) for k, x in o.items()}
+        return super().default(o)
 
 
 class JSONDecoder(json.JSONDecoder):
@@ -91,6 +95,8 @@ class JSONDecoder(json.JSONDecoder):
         json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
 
     def object_hook(self, dct):
+        if not isinstance(dct, dict):
+            return dct
         for k, v in dct.items():
             if isinstance(v, str):
                 try:
@@ -106,6 +112,8 @@ class JSONDecoder(json.JSONDecoder):
                     pass
             elif isinstance(v, dict):
                 dct[k] = self.object_hook(v)
+            elif isinstance(v, list):
+                dct[k] = [self.object_hook(x) for x in v]
         return dct
 
 
