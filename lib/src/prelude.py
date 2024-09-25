@@ -8,12 +8,18 @@ from base64 import b64encode, b64decode
 import extism_ffi as ffi
 
 LogLevel = ffi.LogLevel
-log = ffi.log
 input_str = ffi.input_str
 input_bytes = ffi.input_bytes
 output_str = ffi.output_str
 output_bytes = ffi.output_bytes
 memory = ffi.memory
+
+def log(level, msg):
+    if isinstance(msg, bytes):
+        msg = msg.decode()
+    elif not isinstance(msg, str):
+        msg = str(msg)
+    ffi.log(level, msg) 
 
 HttpRequest = ffi.HttpRequest
 
@@ -38,25 +44,33 @@ class Codec(ABC):
         """Decode a value from bytes"""
         raise Exception("encode not implemented")
 
+    def __post_init__(self):
+        self._fix_fields()
+
     def _fix_fields(self):
         if not hasattr(self, '__dict__'):
             return
         types = self.__annotations__
         for k, v in self.__dict__.items():
             if k in types:
-                setattr(self, k, self._fix_field(types[k], k, v))
+                setattr(self, k, self._fix_field(types[k], v))
         return self
     
-    def _fix_field(self, ty: type, k, v):
-        try:
-            if isinstance(v, dict) and issubclass(ty, Codec):
-                return ty(**v)._fix_fields()
-            elif isinstance(v, str) and issubclass(ty, Enum):
-                return ty(v)
-        except Exception as _:
-            pass
-
-        return v
+    def _fix_field(self, ty: type, v):
+        def check_subclass(a, b):
+            try:
+                return issubclass(a, b)
+            except Exception as _:
+                return False
+        if isinstance(v, dict) and check_subclass(ty, Codec):
+            return ty(**v)._fix_fields()
+        elif isinstance(v, str) and check_subclass(ty, Enum):
+            return ty(v)
+        elif isinstance(v, list) and hasattr(ty, '__origin__') and ty.__origin__ is list:
+            ty = ty.__args__[0]
+            return [self._fix_field(ty, x) for x in v]
+        else:
+            return v
 
 
 class JSONEncoder(json.JSONEncoder):
