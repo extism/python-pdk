@@ -69,8 +69,11 @@ class Codec(ABC):
         elif isinstance(v, list) and hasattr(ty, '__origin__') and ty.__origin__ is list:
             ty = ty.__args__[0]
             return [self._fix_field(ty, x) for x in v]
-        else:
-            return v
+        elif hasattr(ty, '__origin__') and ty.__origin__ is Union:
+            if len(ty.__args__) == 2 and ty.__args__[1] == type(None) and v is not None:
+                ty = ty.__args__[0]
+                return self._fix_field(ty, v)
+        return v
 
 
 class JSONEncoder(json.JSONEncoder):
