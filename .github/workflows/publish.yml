@@ -49,7 +49,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wasi-deps
-          path: lib/target/wasm32-wasi/wasi-deps
+          path: lib/target/wasm32-wasi/wasi-deps/
 
   compile_cli:
     name: Compile CLI
@@ -104,6 +104,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: wasi-deps
+          path: wasi-deps
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -131,7 +132,7 @@ jobs:
         run: cd bin && cargo build --release --target ${{ matrix.target }} --package extism-py
 
       - name: Create directory structure
-        run: mkdir -p extism-py/usr/bin extism-py/usr/share && mv lib/target/wasm32-wasi/wasi-deps/usr extism-py/usr/share/extism-py && mv ${{ matrix.path }} extism-py/usr/bin/
+        run: mkdir -p extism-py/usr/bin extism-py/usr/share && mv wasi-deps/usr extism-py/usr/share/extism-py && mv ${{ matrix.path }} extism-py/usr/bin/
 
       - name: Archive assets
         run: tar czf ${{ matrix.asset_name }}.tar.gz extism-py
