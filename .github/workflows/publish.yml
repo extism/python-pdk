@@ -21,6 +21,11 @@ jobs:
           target: wasm32-wasi
           default: true
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+
       - name: Get wasm-opt
         run: |
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-linux.tar.gz > binaryen.tar.gz
@@ -101,6 +106,11 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
           default: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
 
       - name: Install gnu gcc
         run: |
