@@ -3,6 +3,7 @@ import json
 from enum import Enum
 from abc import ABC, abstractmethod
 from datetime import datetime
+from base64 import b64encode, b64decode
 
 import extism_ffi as ffi
 
@@ -59,16 +60,15 @@ class JSONDecoder(json.JSONDecoder):
                 try:
                     dct[k] = datetime.fromisoformat(v)
                     continue
-                except:
+                except Exception as _:
                     pass
 
                 try:
-                    dct[k] = b64decode(v)
+                    dct[k] = b64decode(v.encode())
                     continue
-                except:
+                except Exception as _:
                     pass
-
-            if isinstance(v, dict):
+            elif isinstance(v, dict):
                 dct[k] = self.object_hook(v)
         return dct
 
