@@ -1,15 +1,26 @@
 from typing import Union, Optional
-
 import json
+from enum import Enum
+from abc import ABC, abstractmethod
+from datetime import datetime
+from base64 import b64encode, b64decode
+from dataclasses import is_dataclass
+
 import extism_ffi as ffi
 
 LogLevel = ffi.LogLevel
-log = ffi.log
 input_str = ffi.input_str
 input_bytes = ffi.input_bytes
 output_str = ffi.output_str
 output_bytes = ffi.output_bytes
 memory = ffi.memory
+
+def log(level, msg):
+    if isinstance(msg, bytes):
+        msg = msg.decode()
+    elif not isinstance(msg, str):
+        msg = str(msg)
+    ffi.log(level, msg) 
 
 HttpRequest = ffi.HttpRequest
 
@@ -18,39 +29,117 @@ __exports = []
 IMPORT_INDEX = 0
 
 
-class Codec:
+class Codec(ABC):
     """
     Codec is used to serialize and deserialize values in Extism memory
-    """
+    """      
 
-    def __init__(self, value):
-        self.value = value
-
-    def get(self):
-        """Method to get the inner value"""
-        return self.value
-
-    def set(self, x):
-        """Method to set in the inner value"""
-        self.value = x
-
+    @abstractmethod
     def encode(self) -> bytes:
         """Encode the inner value to bytes"""
         raise Exception("encode not implemented")
 
-    @staticmethod
+    @classmethod
+    @abstractmethod
     def decode(s: bytes):
         """Decode a value from bytes"""
         raise Exception("encode not implemented")
 
+    def __post_init__(self):
+        self._fix_fields()
+
+    def _fix_fields(self):
+        if not hasattr(self, '__annotations__'):
+            return
+        for k in self.__annotations__:
+            ty = self.__annotations__[k]
+            v = getattr(self, k)
+            setattr(self, k, self._fix_field(ty, v))
+        return self
+    
+    def _fix_field(self, ty: type, v):
+        def check_subclass(a, b):
+            try:
+                return issubclass(a, b)
+            except Exception as _:
+                return False
+        if isinstance(v, dict) and check_subclass(ty, Codec):
+            return ty(**v)._fix_fields()
+        elif isinstance(v, str) and check_subclass(ty, Enum):
+            return ty(v)
+        elif isinstance(v, list) and hasattr(ty, '__origin__') and ty.__origin__ is list:
+            ty = ty.__args__[0]
+            return [self._fix_field(ty, x) for x in v]
+        elif hasattr(ty, '__origin__') and ty.__origin__ is Union:
+            if len(ty.__args__) == 2 and ty.__args__[1] == type(None) and v is not None:
+                ty = ty.__args__[0]
+                return self._fix_field(ty, v)
+        return v
+
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Json):
+            return json.loads(o.encode().decode())
+        elif isinstance(o, bytes):
+            return b64encode(o).decode()
+        elif isinstance(o, datetime):
+            return o.isoformat()
+        elif isinstance(o, Enum):
+            return str(o.value)
+        elif isinstance(o, list):
+            return [self.default(x) for x in o]
+        elif isinstance(o, dict):
+            return {k: self.default(x) for k, x in o.items()}
+        return super().default(o)
+
+
+class JSONDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs):
+        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+
+    def object_hook(self, dct):
+        if not isinstance(dct, dict):
+            return dct
+        for k, v in dct.items():
+            if isinstance(v, str):
+                try:
+                    dct[k] = datetime.fromisoformat(v)
+                    continue
+                except Exception as _:
+                    pass
+
+                try:
+                    dct[k] = b64decode(v.encode())
+                    continue
+                except Exception as _:
+                    pass
+            elif isinstance(v, dict):
+                dct[k] = self.object_hook(v)
+            elif isinstance(v, list):
+                dct[k] = [self.object_hook(x) for x in v]
+        return dct
+
 
 class Json(Codec):
     def encode(self) -> bytes:
-        return json.dumps(self.value).encode()
+        v = self
+        if not isinstance(self, (dict, datetime, bytes)) and hasattr(self, "__dict__"):
+            if len(self.__dict__) > 0:
+                v = self.__dict__
+        return json.dumps(v, cls=JSONEncoder).encode()
 
-    @staticmethod
-    def decode(s: bytes):
-        return Json(json.loads(s.decode()))
+    @classmethod
+    def decode(cls, s: bytes):
+        x = json.loads(s.decode(), cls=JSONDecoder)
+        if is_dataclass(cls):
+            return cls(**x)
+        else:
+            return cls(**x)._fix_fields()
+
+
+class JsonObject(Json, dict):
+    pass
 
 
 def _store(x) -> int:
@@ -59,9 +148,11 @@ def _store(x) -> int:
     elif isinstance(x, bytes):
         return ffi.memory.alloc(x).offset
     elif isinstance(x, dict) or isinstance(x, list):
-        return ffi.memory.alloc(json.dumps(x).encode()).offset
+        return ffi.memory.alloc(json.dumps(x, cls=JSONEncoder).encode()).offset
     elif isinstance(x, Codec):
         return ffi.memory.alloc(x.encode()).offset
+    elif isinstance(x, Enum):
+        return ffi.memory.alloc(str(x.value).encode()).offset
     elif isinstance(x, ffi.memory.MemoryHandle):
         return x.offset
     elif isinstance(x, int):
@@ -85,9 +176,11 @@ def _load(t, x):
     elif t is bytes:
         return ffi.memory.bytes(mem)
     elif t is dict or t is list:
-        return json.loads(ffi.memory.string(mem))
+        return json.loads(ffi.memory.string(mem), cls=JSONDecoder)
     elif issubclass(t, Codec):
         return t.decode(ffi.memory.bytes(mem))
+    elif issubclass(t, Enum):
+        return t(ffi.memory.string(mem))
     elif t is ffi.memory.MemoryHandle:
         return mem
     elif t is type(None):
@@ -139,14 +232,58 @@ def shared_fn(f):
     return inner
 
 
-def input_json():
+def input_json(t: Optional[type] = None):
     """Get input as JSON"""
-    return json.loads(input_str())
+    if t is int or t is float:
+        return t(json.loads(input_str(), cls=JSONDecoder))
+    if issubclass(t, Json):
+        return t(**json.loads(input_str(), cls=JSONDecoder))
+    return json.loads(input_str(), cls=JSONDecoder)
 
 
 def output_json(x):
     """Set JSON output"""
-    output_str(json.dumps(x))
+    if isinstance(x, int) or isinstance(x, float):
+        output_str(json.dumps(str(x)))
+        return
+
+    if hasattr(x, "__dict__"):
+        x = x.__dict__
+    output_str(json.dumps(x, cls=JSONEncoder))
+
+
+def input(t: type = None):
+    if t is None:
+        return None
+    if t is str:
+        return input_str()
+    elif t is bytes:
+        return input_bytes()
+    elif issubclass(t, Codec):
+        return t.decode(input_bytes())
+    elif t is dict or t is list:
+        return json.loads(input_str(), cls=JSONDecoder)
+    elif issubclass(t, Enum):
+        return t(input_str())
+    else:
+        raise Exception(f"Unsupported type for input: {t}")
+
+
+def output(x=None):
+    if x is None:
+        return
+    if isinstance(x, str):
+        output_str(x)
+    elif isinstance(x, bytes):
+        output_bytes(x)
+    elif isinstance(x, Codec):
+        output_bytes(x.encode())
+    elif isinstance(x, dict) or isinstance(x, list):
+        output_json(x)
+    elif isinstance(x, Enum):
+        output_str(x.value)
+    else:
+        raise Exception(f"Unsupported type for output: {type(x)}")
 
 
 class Var:
@@ -169,7 +306,7 @@ class Var:
         x = Var.get_str(key)
         if x is None:
             return x
-        return json.loads(x)
+        return json.loads(x, cls=JSONDecoder)
 
     @staticmethod
     def set(key: str, value: Union[bytes, str]):
@@ -191,7 +328,7 @@ class Config:
         x = ffi.config_get(key)
         if x is None:
             return None
-        return json.loads(x)
+        return json.loads(x, cls=JSONDecoder)
 
 
 class HttpResponse:
@@ -215,7 +352,7 @@ class HttpResponse:
 
     def data_json(self):
         """Get response body JSON"""
-        return json.loads(self.data_str())
+        return json.loads(self.data_str(), cls=JSONDecoder)
 
 
 class Http:

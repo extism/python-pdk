@@ -28,7 +28,7 @@ fn find_deps() -> PathBuf {
 
     directories::BaseDirs::new()
         .unwrap()
-        .data_local_dir()
+        .data_dir()
         .join("extism-py")
 }
 

@@ -10,7 +10,7 @@ def reflect(x: str) -> str:
     pass
 
 @extism.import_fn("example", "update_dict")
-def update_dict(x: dict) -> dict:
+def update_dict(x: extism.JsonObject) -> extism.JsonObject:
     pass
 
 @extism.plugin_fn
@@ -22,5 +22,5 @@ def count_vowels():
         if ch in ['A', 'a', 'E', 'e', 'I', 'i', 'O', 'o', 'U', 'u']:
             total += 1
     extism.log(extism.LogLevel.Info, "Hello!")
-    extism.output_json(update_dict({"count": total}))
+    extism.output(update_dict({"count": total}))
 

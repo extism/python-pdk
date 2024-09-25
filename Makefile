@@ -1,3 +1,5 @@
+PYTHON_FILES=lib/src/prelude.py bin/src/invoke.py build.py
+
 build:
 	./build.py build
 
@@ -5,14 +7,10 @@ install:
 	./build.py install
 
 format:
-	uv run ruff format lib/src/prelude.py
-	uv run ruff format bin/src/invoke.py
-	uv run ruff format build.py
+	uv run ruff format $(PYTHON_FILES)
 
 check:
-	uv run ruff check lib/src/prelude.py
-	uv run ruff check bin/src/invoke.py
-	uv run ruff check build.py
+	uv run ruff check $(PYTHON_FILES)
 
 clean:
 	rm -rf bin/target lib/target
