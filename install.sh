@@ -116,10 +116,12 @@ if curl -fsSL --output /tmp/extism-py.tar.gz "$DOWNLOAD_URL"; then
   if [ "$USE_SUDO" = "1" ]; then
     sudo mkdir -p /usr/local/share
     echo "No user-writable bin directory found in PATH. Using sudo to install in $INSTALL_DIR"
+    sudo rm -rf /usr/local/share/extism-py
     sudo mv /tmp/extism-py/bin/extism-py "$TARGET"
     sudo mv /tmp/extism-py/share/extism-py /usr/local/share
   else
     mkdir -p ~/.local/share
+    rm -rf ~/.local/share/extism-py
     mv /tmp/extism-py "$TARGET"
     mv /tmp/extism-py/share/extism-py ~/.local/share
   fi
