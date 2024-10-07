@@ -1,11 +1,12 @@
 #!/bin/bash
-set -eou pipefail
 
 if [[ -z "${GITHUB_TOKEN}" ]]; then
   GITHUB_FLAGS=""
 else
   GITHUB_FLAGS="--header \"Authorization: Bearer $GITHUB_TOKEN\" --header \"X-GitHub-Api-Version: 2022-11-28\""
 fi
+
+set -eou pipefail
 
 # Get the latest release
 RELEASE_API_URL="https://api.github.com/repos/extism/python-pdk/releases/latest"
