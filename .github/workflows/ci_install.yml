@@ -19,10 +19,8 @@ jobs:
 
     - name: Test Install Script
       run: |
-        bash install.sh
-        ls /tmp
-        ls /usr/local/bin
-        ls ~/.local/bin
+        ./install.sh
+        which extism-py
         extism-py --version
       if: runner.os != 'Windows'
 
