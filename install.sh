@@ -1,4 +1,23 @@
-set -e
+#!/bin/bash
+set -eou pipefail
+
+# Get the latest release
+RELEASE_API_URL="https://api.github.com/repos/extism/python-pdk/releases/latest"
+response=$(curl -s "$RELEASE_API_URL")
+if [ -z "$response" ]; then
+    echo "Error: Failed to fetch the latest release from GitHub API."
+    exit 1
+fi
+
+# try to parse tag
+LATEST_TAG=$(echo "$response" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+
+if [ -z "$LATEST_TAG" ]; then
+    echo "Error: Could not find the latest release tag."
+    exit 1
+fi
+
+echo "Installing extism-py release with tag: $LATEST_TAG"
 
 OS=''
 case `uname` in
@@ -14,23 +33,35 @@ case "$ARCH" in
   *)                echo "unknown arch: $ARCH" && exit 1 ;;
 esac
 
-export TAG=v0.1.0
-export BINARYEN_TAG="version_116"
+BINARYEN_TAG="version_116"
+DOWNLOAD_URL="https://github.com/extism/python-pdk/releases/download/$LATEST_TAG/extism-py-$ARCH-$OS-$LATEST_TAG.tar.gz"
 
-curl -L -o /tmp/extism-py.tar.gz "https://github.com/extism/python-pdk/releases/download/$TAG/extism-py-$ARCH-$OS-$TAG.tar.gz"
+# Function to check if a directory is in PATH and writable
+is_valid_install_dir() {
+  [[ ":$PATH:" == *":$1:"* ]] && [ -w "$1" ]
+}
 
-tar xzf /tmp/extism-py.tar.gz
-mkdir -p $HOME/.local/bin $HOME/.local/share/extism-py
-mv extism-py/bin/extism-py $HOME/.local/bin/extism-py
-rm -rf $HOME/.local/share/extism-py
-mv extism-py/share/extism-py $HOME/.local/share
-chmod +x $HOME/.local/bin/extism-py
-rm -r /tmp/extism-py.tar.gz extism-py
+INSTALL_DIR=""
+USE_SUDO=""
 
-echo "extism-py installed to $HOME/.local/bin/extism-py"
+# Check for common user-writable directories in PATH
+for dir in "$HOME/bin" "$HOME/.local/bin" "$HOME/.bin"; do
+  if is_valid_install_dir "$dir"; then
+    INSTALL_DIR="$dir"
+    break
+  fi
+done
+
+# If no user-writable directory found, use system directory
+if [ -z "$INSTALL_DIR" ]; then
+  INSTALL_DIR="/usr/local/bin"
+  USE_SUDO=1
+fi
+
+echo "Checking for binaryen..."
 
 if ! which "wasm-merge" > /dev/null || ! which "wasm-opt" > /dev/null; then
-  echo 'Missing binaryen tool(s)'
+  echo "Missing binaryen tool(s)"
 
   # binaryen use arm64 instead where as extism-py uses aarch64 for release file naming
   case "$ARCH" in
@@ -53,21 +84,58 @@ if ! which "wasm-merge" > /dev/null || ! which "wasm-opt" > /dev/null; then
     fi
     rm -rf 'binaryen' "binaryen-$BINARYEN_TAG"
     tar xf "binaryen-$BINARYEN_TAG-$ARCH-$OS.tar.gz"
-    mv "binaryen-$BINARYEN_TAG"/ ./binaryen
+    mv "binaryen-$BINARYEN_TAG"/ binaryen/
+    sudo mkdir -p /usr/local/binaryen
     if ! which 'wasm-merge' > /dev/null; then
       echo "Installing wasm-merge..."
-      mv binaryen/bin/wasm-merge ~/.local/bin/wasm-merge
+      rm -f /usr/local/binaryen/wasm-merge
+      sudo mv binaryen/bin/wasm-merge /usr/local/binaryen/wasm-merge
+      sudo ln -s /usr/local/binaryen/wasm-merge /usr/local/bin/wasm-merge
     else
       echo "wasm-merge is already installed"
     fi
     if ! which 'wasm-opt' > /dev/null; then
       echo "Installing wasm-opt..."
-      mv binaryen/bin/wasm-opt ~/.local/bin/wasm-opt
+      rm -f /usr/local/bin/wasm-opt
+      sudo mv binaryen/bin/wasm-opt /usr/local/binaryen/wasm-opt
+      sudo ln -s /usr/local/binaryen/wasm-opt /usr/local/bin/wasm-opt
     else
       echo "wasm-opt is already installed"
     fi
   fi
-  rm -rf ./binaryen
 else
-  echo "wasm-merge and wasm-opt are already installed"
+  echo "binaryen tools are already installed"
 fi
+
+TARGET="$INSTALL_DIR/extism-py"
+echo "Downloading extism-py from: $DOWNLOAD_URL"
+
+if curl -fsSL --output /tmp/extism-py.tar.gz "$DOWNLOAD_URL"; then
+  tar xzf /tmp/extism-py.tar.gz -C /tmp
+
+  if [ "$USE_SUDO" = "1" ]; then
+    sudo mkdir -p /usr/local/share
+    echo "No user-writable bin directory found in PATH. Using sudo to install in $INSTALL_DIR"
+    sudo mv /tmp/extism-py/bin/extism-py "$TARGET"
+    sudo mv /tmp/extism-py/share/extism-py /usr/local/share
+  else
+    mkdir -p ~/.local/share
+    mv /tmp/extism-py "$TARGET"
+    mv /tmp/extism-py/share/extism-py ~/.local/share
+  fi
+  chmod +x "$TARGET"
+
+  echo "Successfully installed extism-py to $TARGET"
+else
+  echo "Failed to download or install extism-py. Curl exit code: $?"
+  exit
+fi
+
+# Warn the user if the chosen path is not in the path
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+  echo "Note: $INSTALL_DIR is not in your PATH. You may need to add it to your PATH or use the full path to run extism-py."
+fi
+
+echo "Installation complete. Try to run 'extism-py --version' to ensure it was correctly installed."
+
+

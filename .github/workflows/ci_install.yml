@@ -17,10 +17,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Test Install Script (Linux)
+    - name: Test Install Script
       run: |
-        sh install.sh
-        ~/.local/bin/extism-py --version
+        bash install.sh
+        extism-py --version
       if: runner.os != 'Windows'
 
     # - name: Test Install Script Part1 (Windows)
