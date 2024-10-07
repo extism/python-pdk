@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eou pipefail
+# set -eou pipefail
 
 # Get the latest release
 RELEASE_API_URL="https://api.github.com/repos/extism/python-pdk/releases/latest"
