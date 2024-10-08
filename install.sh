@@ -129,7 +129,7 @@ if curl -fsSL --output /tmp/extism-py.tar.gz "$DOWNLOAD_URL"; then
   else
     mkdir -p ~/.local/share
     rm -rf ~/.local/share/extism-py
-    mv /tmp/extism-py "$TARGET"
+    mv /tmp/extism-py/bin/extism-py "$TARGET"
     mv /tmp/extism-py/share/extism-py ~/.local/share
   fi
   chmod +x "$TARGET"
