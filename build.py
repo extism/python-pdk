@@ -119,10 +119,10 @@ def do_clean(args):
     logging.info("Clean completed successfully.")
 
 
-def get_version():
+def get_version(path):
     try:
         result = subprocess.run(
-            [exe_file(), "--version"], capture_output=True, text=True, check=True
+            [path / exe_file(), "--version"], capture_output=True, text=True, check=True
         )
         return result.stdout.strip()
     except subprocess.CalledProcessError:
@@ -174,7 +174,7 @@ def main():
             do_clean(args)
 
         if args.command in ["install"]:
-            version = get_version()
+            version = get_version(Path(args.bin_dir))
             logging.info(f"extism-py version: {version}")
     except Exception as e:
         logging.error(f"An error occurred: {e}")

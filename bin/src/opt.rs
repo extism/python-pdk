@@ -26,6 +26,16 @@ fn find_deps() -> PathBuf {
         return in_repo_root;
     }
 
+    let usr_local_share = PathBuf::from("/usr/local/share/extism-py");
+    if usr_local_share.exists() {
+        return usr_local_share;
+    }
+
+    let usr_share = PathBuf::from("/usr/share/extism-py");
+    if usr_share.exists() {
+        return usr_share;
+    }
+
     directories::BaseDirs::new()
         .unwrap()
         .data_dir()
