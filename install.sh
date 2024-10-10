@@ -26,10 +26,15 @@ fi
 
 echo "Installing extism-py release with tag: $LATEST_TAG"
 
+USER_DATA_DIR=''
 OS=''
 case `uname` in
-  Darwin*)  OS="macos" ;;
-  Linux*)   OS="linux" ;;
+  Darwin*)  
+    OS="macos" 
+    USER_DATA_DIR="$HOME/Library/Application Support" ;;
+  Linux*)
+    OS="linux"
+    USER_DATA_DIR="$HOME/.local/share" ;;
   *)        echo "unknown os: $OSTYPE" && exit 1 ;;
 esac
 
@@ -119,18 +124,16 @@ echo "Downloading extism-py from: $DOWNLOAD_URL"
 
 if curl -fsSL --output /tmp/extism-py.tar.gz "$DOWNLOAD_URL"; then
   tar xzf /tmp/extism-py.tar.gz -C /tmp
+  rm -rf "$USER_DATA_DIR/extism-py"
+  mkdir -p "$USER_DATA_DIR"
 
   if [ "$USE_SUDO" = "1" ]; then
     echo "No user-writable bin directory found in PATH. Using sudo to install in $INSTALL_DIR"
-    sudo mkdir -p /usr/local/share
-    sudo rm -rf /usr/local/share/extism-py
     sudo mv /tmp/extism-py/bin/extism-py "$TARGET"
-    sudo mv /tmp/extism-py/share/extism-py /usr/local/share
+    mv /tmp/extism-py/share/extism-py "$USER_DATA_DIR/extism-py"
   else
-    mkdir -p ~/.local/share
-    rm -rf ~/.local/share/extism-py
     mv /tmp/extism-py/bin/extism-py "$TARGET"
-    mv /tmp/extism-py/share/extism-py ~/.local/share
+    mv /tmp/extism-py/share/extism-py "$USER_DATA_DIR/extism-py"
   fi
   chmod +x "$TARGET"
 

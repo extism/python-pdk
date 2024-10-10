@@ -19,7 +19,7 @@ jobs:
 
     - name: Test Install Script
       run: |
-        ./install.sh
+        bash ./install.sh
         which extism-py
         extism-py --version
       if: runner.os != 'Windows'
