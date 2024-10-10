@@ -124,16 +124,14 @@ echo "Downloading extism-py from: $DOWNLOAD_URL"
 
 if curl -fsSL --output /tmp/extism-py.tar.gz "$DOWNLOAD_URL"; then
   tar xzf /tmp/extism-py.tar.gz -C /tmp
+  rm -rf "$USER_DATA_DIR/extism-py"
+  mkdir -p "$USER_DATA_DIR"
 
   if [ "$USE_SUDO" = "1" ]; then
     echo "No user-writable bin directory found in PATH. Using sudo to install in $INSTALL_DIR"
-    sudo rm -rf /usr/share/extism-py
-    sudo mkdir -p /usr/share
     sudo mv /tmp/extism-py/bin/extism-py "$TARGET"
-    sudo mv /tmp/extism-py/share/extism-py /usr/share/extism-py
+    mv /tmp/extism-py/share/extism-py "$USER_DATA_DIR/extism-py"
   else
-    rm -rf "$USER_DATA_DIR/extism-py"
-    mkdir -p "$USER_DATA_DIR"
     mv /tmp/extism-py/bin/extism-py "$TARGET"
     mv /tmp/extism-py/share/extism-py "$USER_DATA_DIR/extism-py"
   fi
