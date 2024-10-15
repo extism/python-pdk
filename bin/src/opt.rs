@@ -16,12 +16,12 @@ fn find_deps() -> PathBuf {
         return PathBuf::from(path);
     }
 
-    let in_repo = PathBuf::from("../lib/target/wasm32-wasi/wasi-deps/usr");
+    let in_repo = PathBuf::from("../lib/target/wasm32-wasi/wasi-deps");
     if in_repo.exists() {
         return in_repo;
     }
 
-    let in_repo_root = PathBuf::from("lib/target/wasm32-wasi/wasi-deps/usr");
+    let in_repo_root = PathBuf::from("lib/target/wasm32-wasi/wasi-deps");
     if in_repo_root.exists() {
         return in_repo_root;
     }
@@ -64,12 +64,13 @@ impl<'a> Optimizer<'a> {
         let python_path = std::env::var("PYTHONPATH").unwrap_or_else(|_| String::from("."));
         let paths: Vec<&str> = python_path.split(':').collect();
         if self.wizen {
+            println!("DEPS IN: {:?}", find_deps());
             let mut w = Wizer::new();
             w.allow_wasi(true)?
                 .inherit_stdio(true)
                 .inherit_env(true)
                 .wasm_bulk_memory(true)
-                .map_dir("/usr", find_deps());
+                .map_dir("/usr", find_deps().join("usr"));
             for path in paths {
                 if path.is_empty() {
                     continue;
