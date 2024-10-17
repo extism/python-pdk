@@ -12,7 +12,7 @@ pub(crate) struct Optimizer<'a> {
 }
 
 fn find_deps() -> PathBuf {
-    if let Ok(path) = std::env::var("EXTISM_PYTHON_USR_DIR") {
+    if let Ok(path) = std::env::var("EXTISM_PYTHON_WASI_DEPS_DIR") {
         return PathBuf::from(path);
     }
 
@@ -63,14 +63,25 @@ impl<'a> Optimizer<'a> {
     pub fn write_optimized_wasm(self, dest: impl AsRef<Path>) -> Result<(), Error> {
         let python_path = std::env::var("PYTHONPATH").unwrap_or_else(|_| String::from("."));
         let paths: Vec<&str> = python_path.split(':').collect();
+
+        // Ensure compatibility with old releases
+        let mut deps = find_deps().join("usr");
+        if !deps.exists() {
+            let parent = deps.parent().unwrap();
+            if parent.join("local").exists() {
+                deps = parent.to_path_buf();
+            } else {
+                anyhow::bail!("wasi-deps path doesn't exist: {}", deps.display());
+            }
+        }
+
         if self.wizen {
-            println!("DEPS IN: {:?}", find_deps());
             let mut w = Wizer::new();
             w.allow_wasi(true)?
                 .inherit_stdio(true)
                 .inherit_env(true)
                 .wasm_bulk_memory(true)
-                .map_dir("/usr", find_deps().join("usr"));
+                .map_dir("/usr", deps);
             for path in paths {
                 if path.is_empty() {
                     continue;
