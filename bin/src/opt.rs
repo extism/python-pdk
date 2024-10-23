@@ -9,6 +9,7 @@ pub(crate) struct Optimizer<'a> {
     wizen: bool,
     optimize: bool,
     wasm: &'a [u8],
+    debug: bool,
 }
 
 fn find_deps() -> PathBuf {
@@ -48,12 +49,18 @@ impl<'a> Optimizer<'a> {
             wasm,
             optimize: false,
             wizen: false,
+            debug: false,
         }
     }
 
     #[allow(unused)]
     pub fn optimize(self, optimize: bool) -> Self {
         Self { optimize, ..self }
+    }
+
+    #[allow(unused)]
+    pub fn debug(self, debug: bool) -> Self {
+        Self { debug, ..self }
     }
 
     pub fn wizen(self, wizen: bool) -> Self {
@@ -95,14 +102,14 @@ impl<'a> Optimizer<'a> {
         }
 
         if self.optimize {
-            optimize_wasm_file(dest)?;
+            optimize_wasm_file(dest, self.debug)?;
         }
 
         Ok(())
     }
 }
 
-pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>) -> Result<(), Error> {
+pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>, debug: bool) -> Result<(), Error> {
     let output = Command::new("wasm-opt")
         .arg("--version")
         .stdout(Stdio::null())
@@ -111,12 +118,16 @@ pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>) -> Result<(), Error> {
     if output.is_err() {
         anyhow::bail!("Failed to detect wasm-opt. Please install binaryen and make sure wasm-opt is on your path: https://github.com/WebAssembly/binaryen");
     }
-    Command::new("wasm-opt")
-        .arg("--enable-reference-types")
+    let mut cmd = Command::new("wasm-opt");
+    cmd.arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
-        .arg("--strip")
-        .arg("-O2")
-        .arg(dest.as_ref())
+        .arg("-O2");
+    if debug {
+        cmd.arg("-g");
+    } else {
+        cmd.arg("--strip");
+    }
+    cmd.arg(dest.as_ref())
         .arg("-o")
         .arg(dest.as_ref())
         .status()?;
