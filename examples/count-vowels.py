@@ -1,5 +1,10 @@
 import extism
 import json
+from dataclasses import dataclass
+
+@dataclass
+class Count(extism.Json):
+    count: int
 
 @extism.plugin_fn
 def count_vowels():
@@ -9,5 +14,5 @@ def count_vowels():
         if ch in ['A', 'a', 'E', 'e', 'I', 'i', 'O', 'o', 'U', 'u']:
             total += 1
     extism.log(extism.LogLevel.Info, "Hello!")
-    extism.output_json({"count": total})
+    extism.output(Count(total))
 

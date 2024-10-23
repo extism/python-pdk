@@ -53,6 +53,7 @@ fn main() -> Result<(), Error> {
     if opts.core {
         opt::Optimizer::new(&core)
             .wizen(true)
+            .debug(opts.debug)
             .write_optimized_wasm(opts.output)?;
         return Ok(());
     }
@@ -67,13 +68,16 @@ fn main() -> Result<(), Error> {
 
     let self_cmd = env::args().next().expect("Expected a command argument");
     {
-        let mut command = Command::new(self_cmd)
+        let mut command = Command::new(self_cmd);
+        command
             .arg("-c")
             .arg(&opts.input_py)
             .arg("-o")
-            .arg(&core_path)
-            .stdin(Stdio::piped())
-            .spawn()?;
+            .arg(&core_path);
+        if opts.debug {
+            command.arg("-g");
+        }
+        let mut command = command.stdin(Stdio::piped()).spawn()?;
         command
             .stdin
             .take()
@@ -104,20 +108,24 @@ fn main() -> Result<(), Error> {
     }
 
     // Merge the shim with the core module
-    let status = Command::new("wasm-merge")
-        .arg(&core_path)
+    let mut cmd = Command::new("wasm-merge");
+    cmd.arg(&core_path)
         .arg("core")
         .arg(&shim_path)
         .arg("shim")
         .arg("-o")
         .arg(&opts.output)
         .arg("--enable-reference-types")
-        .arg("--enable-bulk-memory")
-        .status()?;
+        .arg("--enable-bulk-memory");
+    if opts.debug {
+        cmd.arg("-g");
+    }
+
+    let status = cmd.status()?;
     if !status.success() {
         bail!("wasm-merge failed. Couldn't merge shim");
     }
 
-    opt::optimize_wasm_file(opts.output)?;
+    opt::optimize_wasm_file(opts.output, opts.debug)?;
     Ok(())
 }

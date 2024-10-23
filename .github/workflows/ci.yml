@@ -17,7 +17,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: default
-          toolchain: stable
+          toolchain: 1.81.0
           target: wasm32-wasi
           default: true
 
@@ -36,10 +36,10 @@ jobs:
           go install github.com/extism/cli/extism@v1.5.4
           cd /tmp
           # get just wasm-merge and wasm-opt
-          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-linux.tar.gz > binaryen.tar.gz
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_117/binaryen-version_117-x86_64-linux.tar.gz > binaryen.tar.gz
           tar xvzf binaryen.tar.gz
-          sudo cp binaryen-version_116/bin/wasm-merge /usr/local/bin
-          sudo cp binaryen-version_116/bin/wasm-opt /usr/local/bin
+          sudo cp binaryen-version_117/bin/wasm-merge /usr/local/bin
+          sudo cp binaryen-version_117/bin/wasm-opt /usr/local/bin
         if: runner.os != 'Windows'
 
       - name: Update deps (Windows)
@@ -48,11 +48,11 @@ jobs:
           go install github.com/extism/cli/extism@c1eb1fc
           Remove-Item -Recurse -Path "c:\Program files\Binaryen" -Force -ErrorAction SilentlyContinue > $null 2>&1
           New-Item -ItemType Directory -Force -Path "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
-          Invoke-WebRequest -Uri "https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_116-x86_64-windows.tar.gz" -OutFile "$env:TMP\binaryen-version_116-x86_64-windows.tar.gz"
-          7z x "$env:TMP\binaryen-version_116-x86_64-windows.tar.gz" -o"$env:TMP\" >$null  2>&1
-          7z x -ttar "$env:TMP\binaryen-version_116-x86_64-windows.tar" -o"$env:TMP\" >$null  2>&1
-          Copy-Item -Path "$env:TMP\binaryen-version_116\bin\wasm-opt.exe" -Destination "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
-          Copy-Item -Path "$env:TMP\binaryen-version_116\bin\wasm-merge.exe" -Destination "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
+          Invoke-WebRequest -Uri "https://github.com/WebAssembly/binaryen/releases/download/version_116/binaryen-version_117-x86_64-windows.tar.gz" -OutFile "$env:TMP\binaryen-version_116-x86_64-windows.tar.gz"
+          7z x "$env:TMP\binaryen-version_117-x86_64-windows.tar.gz" -o"$env:TMP\" >$null  2>&1
+          7z x -ttar "$env:TMP\binaryen-version_117-x86_64-windows.tar" -o"$env:TMP\" >$null  2>&1
+          Copy-Item -Path "$env:TMP\binaryen-version_117\bin\wasm-opt.exe" -Destination "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
+          Copy-Item -Path "$env:TMP\binaryen-version_117\bin\wasm-merge.exe" -Destination "c:\Program files\Binaryen" -ErrorAction Stop > $null 2>&1
         if: runner.os == 'Windows'
 
       - name: Run Tests (Linux)
