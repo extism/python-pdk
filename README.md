@@ -132,6 +132,28 @@ extism call plugin.wasm sum --input='{"a": 20, "b": 21}' --wasi
 # => {"sum":41}
 ```
 
+You can also specify your input and output types as dataclasses using `extism.Json`:
+
+```python
+from typing import Optional, List 
+from dataclasses import dataclass
+
+# ...
+
+@dataclass
+class User(extism.Json):
+  admin: bool
+  name: Optional[str]
+  email: str
+  addresses: List[Address]
+
+
+@extism.plugin_fn
+def reflect_user():
+  input = extism.input(User)
+  extism.output(input)
+```
+
 ### Configs
 
 Configs are key-value pairs that can be passed in by the host when creating a
