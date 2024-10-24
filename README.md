@@ -17,8 +17,7 @@ We release the compiler as native binaries you can download and run. Check the [
 ### Linux, macOS
 
 ```bash
-curl -O https://raw.githubusercontent.com/extism/python-pdk/main/install.sh
-sh install.sh
+curl -Ls https://raw.githubusercontent.com/extism/python-pdk/main/install.sh | bash
 ```
 
 This will install `extism-py` (and `wasm-merge`/`wasm-opt` if not already installed) to `$HOME/.local/bin` and create `$HOME/.local/share/extism-py`
