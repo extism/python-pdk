@@ -17,8 +17,7 @@ We release the compiler as native binaries you can download and run. Check the [
 ### Linux, macOS
 
 ```bash
-curl -O https://raw.githubusercontent.com/extism/python-pdk/main/install.sh
-sh install.sh
+curl -Ls https://raw.githubusercontent.com/extism/python-pdk/main/install.sh | bash
 ```
 
 This will install `extism-py` (and `wasm-merge`/`wasm-opt` if not already installed) to `$HOME/.local/bin` and create `$HOME/.local/share/extism-py`
@@ -130,6 +129,28 @@ def sum():
 ```bash
 extism call plugin.wasm sum --input='{"a": 20, "b": 21}' --wasi
 # => {"sum":41}
+```
+
+You can also specify your input and output types as dataclasses using `extism.Json`:
+
+```python
+from typing import Optional, List 
+from dataclasses import dataclass
+
+# ...
+
+@dataclass
+class User(extism.Json):
+  admin: bool
+  name: Optional[str]
+  email: str
+  addresses: List[Address]
+
+
+@extism.plugin_fn
+def reflect_user():
+  input = extism.input(User)
+  extism.output(input)
 ```
 
 ### Configs
