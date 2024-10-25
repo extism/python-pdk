@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0.86"
-extism-pdk = "1.1.0"
+extism-pdk = "1.3.0"
 pyo3 = { version = "0.22.0", features = ["abi3-py311"] }
 wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtimes.git", features = [
     "py_main",
