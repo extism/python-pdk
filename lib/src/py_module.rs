@@ -5,7 +5,7 @@ use pyo3::{
     PyErr, PyResult,
 };
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 fn error(x: extism_pdk::Error) -> PyErr {
     PyException::new_err(format!("{:?}", x))
@@ -69,10 +69,11 @@ pub fn var_set(key: String, value: &[u8]) -> PyResult<()> {
 #[pyo3::pyclass(eq, eq_int)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum LogLevel {
-    Error,
+    Trace,
     Debug,
-    Warn,
     Info,
+    Warn,
+    Error,
 }
 
 #[pyo3::pyfunction]
@@ -82,6 +83,7 @@ pub fn log(level: LogLevel, msg: &str) -> PyResult<()> {
         LogLevel::Debug => extism_pdk::log!(extism_pdk::LogLevel::Debug, "{}", msg),
         LogLevel::Warn => extism_pdk::log!(extism_pdk::LogLevel::Warn, "{}", msg),
         LogLevel::Info => extism_pdk::log!(extism_pdk::LogLevel::Info, "{}", msg),
+        LogLevel::Trace => extism_pdk::log!(extism_pdk::LogLevel::Trace, "{}", msg),
     }
 
     Ok(())
@@ -95,7 +97,7 @@ pub struct HttpRequest {
     #[pyo3(get)]
     pub method: Option<String>,
     #[pyo3(get)]
-    pub headers: Option<BTreeMap<String, String>>,
+    pub headers: Option<HashMap<String, String>>,
 }
 
 #[pymethods]
@@ -105,7 +107,7 @@ impl HttpRequest {
     pub fn new(
         url: String,
         method: Option<String>,
-        headers: Option<BTreeMap<String, String>>,
+        headers: Option<HashMap<String, String>>,
     ) -> Self {
         HttpRequest {
             url,
@@ -120,6 +122,7 @@ impl HttpRequest {
 pub struct HttpResponse {
     pub data: Vec<u8>,
     pub status: u16,
+    pub headers: HashMap<String, String>,
 }
 
 #[pymethods]
@@ -139,13 +142,14 @@ impl HttpResponse {
 pub fn http_request(req: HttpRequest, body: Option<&[u8]>) -> PyResult<HttpResponse> {
     let req = extism_pdk::HttpRequest {
         url: req.url,
-        headers: req.headers.unwrap_or_default(),
+        headers: req.headers.unwrap_or_default().into_iter().collect(),
         method: req.method,
     };
     let res = extism_pdk::http::request(&req, body).map_err(error)?;
     let x = HttpResponse {
         data: res.body(),
         status: res.status_code(),
+        headers: res.headers().clone(),
     };
     res.into_memory().free();
     Ok(x)
