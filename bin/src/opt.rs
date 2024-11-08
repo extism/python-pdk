@@ -22,7 +22,17 @@ fn find_deps() -> PathBuf {
         return in_repo;
     }
 
+    let in_repo = PathBuf::from("../lib/target/wasm32-wasip1/wasi-deps");
+    if in_repo.exists() {
+        return in_repo;
+    }
+
     let in_repo_root = PathBuf::from("lib/target/wasm32-wasi/wasi-deps");
+    if in_repo_root.exists() {
+        return in_repo_root;
+    }
+
+    let in_repo_root = PathBuf::from("lib/target/wasm32-wasip1/wasi-deps");
     if in_repo_root.exists() {
         return in_repo_root;
     }
