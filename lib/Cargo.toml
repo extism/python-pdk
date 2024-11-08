@@ -19,3 +19,7 @@ wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtime
 wlr-libpy = { git = "https://github.com/vmware-labs/webassembly-language-runtimes.git", features = [
     "build",
 ] }
+
+[profile.release]
+opt-level = 'z' # Optimize for size
+lto = true

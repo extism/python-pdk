@@ -121,7 +121,7 @@ pub(crate) fn optimize_wasm_file(dest: impl AsRef<Path>, debug: bool) -> Result<
     let mut cmd = Command::new("wasm-opt");
     cmd.arg("--enable-reference-types")
         .arg("--enable-bulk-memory")
-        .arg("-O2");
+        .arg("-Oz");
     if debug {
         cmd.arg("-g");
     } else {

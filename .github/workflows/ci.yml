@@ -17,8 +17,8 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: default
-          toolchain: 1.81.0
-          target: wasm32-wasi
+          # toolchain: 1.81.0
+          target: wasm32-wasip1
           default: true
 
       - name: Setup Go
