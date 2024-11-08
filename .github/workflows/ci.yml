@@ -21,6 +21,7 @@ jobs:
           toolchain: nightly
           target: wasm32-wasip1
           default: true
+          components: rust-src
 
       - name: Setup Go
         uses: actions/setup-go@v4
