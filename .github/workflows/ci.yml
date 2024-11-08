@@ -18,7 +18,7 @@ jobs:
         with:
           profile: default
           # toolchain: 1.81.0
-          toolchain: stable
+          toolchain: nightly
           target: wasm32-wasip1
           default: true
 

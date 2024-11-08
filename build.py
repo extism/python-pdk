@@ -49,12 +49,12 @@ def exe_file() -> str:
         return "extism-py"
 
 
-def run_subprocess(command, cwd=None, quiet=False):
+def run_subprocess(command, cwd=None, quiet=False, env=None):
     try:
         logging.info(f"Running command: {' '.join(command)} in {cwd or '.'}")
         stdout = subprocess.DEVNULL if quiet else None
         stderr = subprocess.DEVNULL if quiet else None
-        subprocess.run(command, cwd=cwd, check=True, stdout=stdout, stderr=stderr)
+        subprocess.run(command, cwd=cwd, check=True, stdout=stdout, stderr=stderr, env=env)
     except subprocess.CalledProcessError as e:
         logging.error(f"Command '{' '.join(command)}' failed with error: {e}")
         raise
@@ -82,8 +82,10 @@ def check_rust_installed():
 
 
 def do_build(args):
+    env = os.environ.copy()
+    env['RUSTFLAGS'] = '-Ctarget-cpu=mvp'
     check_rust_installed()
-    run_subprocess(["cargo", "build", "--release"], cwd="./lib", quiet=args.quiet)
+    run_subprocess(["cargo", "+nightly", "build", "-Zbuild-std=panic_abort,std", "--release"], cwd="./lib", quiet=args.quiet, env=env)
     run_subprocess(["cargo", "build", "--release"], cwd="./bin", quiet=args.quiet)
     shutil.copy2(Path("./bin/target/release") / exe_file(), Path(".") / exe_file())
     logging.info("Build completed successfully.")
