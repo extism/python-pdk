@@ -354,6 +354,10 @@ class HttpResponse:
         """Get response body JSON"""
         return json.loads(self.data_str(), cls=JSONDecoder)
 
+    def headers(self):
+        """Get HTTP response headers"""
+        return self._inner.headers or {}
+
 
 class Http:
     @staticmethod
