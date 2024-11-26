@@ -218,6 +218,40 @@ extism call plugin.wasm logStuff --wasi --log-level=info
 # => 2023/10/17 14:25:00 Hello, World!
 ```
 
+### Using Host Functions
+
+You can defer logic to host functions from your plugin code. 
+Create a function stub using the `import_fn` decorator:
+
+```python
+# plugin.py
+import extism
+
+@extism.import_fn("app", "kv_store") # (namespace, function name)
+def kv_store(input: str): ...
+
+@extism.plugin_fn
+def do_something():
+  data = extism.input(...)
+  kv_store(data)
+```
+
+Implement the host function using the `host_fn` decorator:
+
+```python
+# app.py
+import extism
+
+RECORDS = []
+
+@extism.host_fn(name="kv_store", namespace="app")
+def kv_store(data: ...):
+  RECORDS.append(data)
+
+with extism.Plugin(...) as plugin:
+  plugin.call("do_something", ...)
+```
+
 ## Generating Bindings
 
 It's often very useful to define a schema to describe the function signatures
