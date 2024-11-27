@@ -79,7 +79,7 @@ Some things to note about this code:
 
 1. We can export functions by name using the `extism.plugin_fn` decorator. This
    allows the host to invoke this function.
-2. In this PDK we code directly to the ABI. We get input from the using using
+2. In this PDK we code directly to the ABI. We get input from using the
    `extism.input*` functions and we return data back with the `extism.output*`
    functions.
 
