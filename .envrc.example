@@ -1,0 +1,1 @@
+export EXTISM_ENABLE_WASI_OUTPUT=1 # Enable WASI output for debugging

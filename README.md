@@ -186,7 +186,7 @@ import extism
 
 @extism.plugin_fn
 def greet():
-  user = extism.Config.get("user")
+  user = extism.Config.get_str("user")
   extism.output_str(f"Hello, {user}!")
 ```
 
@@ -348,6 +348,11 @@ To test the built compiler (ensure you have Extism installed):
 extism call out.wasm count_vowels --wasi --input='Hello World Test!'
 # => "{\"count\":4}"
 ```
+
+### Debugging
+
+To improve your debugging experience and get more information for panics
+and crashes, you should set the `EXTISM_ENABLE_WASI_OUTPUT` env var.
 
 ## How it works
 
