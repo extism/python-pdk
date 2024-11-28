@@ -20,4 +20,9 @@ extism call examples/plugin-fn-param-extractors/out.wasm count_vowels_dataclass 
    --wasi \
    --input='{"text": "Hello"}' \
    --log-level=info
+
+extism call examples/plugin-fn-param-extractors/out.wasm count_vowels_http \
+   --wasi \
+   --allow-host '*' \
+   --log-level=info
 ```

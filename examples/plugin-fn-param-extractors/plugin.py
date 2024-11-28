@@ -18,4 +18,10 @@ def count_vowels(cfg: extism.Config, input: str) -> Count:
 
 @extism.plugin_fn
 def count_vowels_dataclass(input: CountVowelsInput) -> Count:
-    extism.log(extism.LogLevel.Info, f"Input: {input.text}")
+    extism.log(extism.LogLevel.Info, f"Json Input: {input.text}")
+
+
+@extism.plugin_fn
+def count_vowels_http(http: extism.Http) -> Count:
+    resp = http.request("http://www.example.com")
+    extism.log(extism.LogLevel.Info, f"Response: {resp}")

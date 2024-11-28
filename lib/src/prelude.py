@@ -219,6 +219,8 @@ def plugin_fn(func):
         match (arg_name, arg_type):
             case (_, _type) if _type is Config:
                 return Config
+            case (_, _type) if _type is Http:
+                return Http
             case _:
                 raise ValueError(f"Unsupported argument")
     
@@ -226,11 +228,14 @@ def plugin_fn(func):
     
     sig = inspect.signature(func)
     annotated_args = {k: v.annotation for k, v in sig.parameters.items()}
-    input_arg = annotated_args.pop("input")
+    if "input" in annotated_args:
+        input_arg = annotated_args.pop("input")
+    else:
+        input_arg = None
     func_args = {k: _handle_arg(k, v) for k, v in annotated_args.items()}
     func_args = {k: v for k, v in func_args.items() if v is not None}
     annotated_func = partial(func, **func_args)
-    
+
     def _defered_input():
         fn_input = input(input_arg)
         return annotated_func(input=fn_input)
