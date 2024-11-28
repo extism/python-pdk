@@ -2,3 +2,4 @@ target
 Cargo.lock
 extism-py
 examples/*.wasm
+.envrc

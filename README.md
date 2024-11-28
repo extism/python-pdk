@@ -349,6 +349,11 @@ extism call out.wasm count_vowels --wasi --input='Hello World Test!'
 # => "{\"count\":4}"
 ```
 
+### Debugging
+
+To improve your debugging experience and get more information for panics
+and crashes, you should set the `EXTISM_ENABLE_WASI_OUTPUT` env var.
+
 ## How it works
 
 This works a little differently than other PDKs. You cannot compile Python to
