@@ -217,21 +217,30 @@ def plugin_fn(func):
     global __exports
     def _handle_arg(arg_name: str, arg_type: type):
         match (arg_name, arg_type):
-            case ("input", _type):
-                return input(_type)
             case (_, _type) if _type is Config:
                 return Config
             case _:
                 raise ValueError(f"Unsupported argument")
-            
+    
+    
+    
     sig = inspect.signature(func)
     annotated_args = {k: v.annotation for k, v in sig.parameters.items()}
+    input_arg = annotated_args.pop("input")
     func_args = {k: _handle_arg(k, v) for k, v in annotated_args.items()}
     func_args = {k: v for k, v in func_args.items() if v is not None}
-    
     annotated_func = partial(func, **func_args)
-    __exports.append(annotated_func)
-    return annotated_func
+    
+    def _defered_input():
+        fn_input = input(input_arg)
+        return annotated_func(input=fn_input)
+    
+    if input_arg:
+        __exports.append(_defered_input)
+        return _defered_input
+    else:
+        __exports.append(annotated_func)
+        return annotated_func
 
 
 def shared_fn(f):

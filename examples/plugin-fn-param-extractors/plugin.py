@@ -5,14 +5,17 @@ from dataclasses import dataclass
 class Count(extism.Json):
     count: int
 
-@extism.plugin_fn
-def count_vowels(config: extism.Config) -> Count:
-    input = extism.input_str()
-    total = 0
-    msg = config.get_str("message")
-    extism.log(extism.LogLevel.Info, f"Input: {msg}")
-    for ch in input:
-        if ch in ['A', 'a', 'E', 'e', 'I', 'i', 'O', 'o', 'U', 'u']:
-            total += 1
-    extism.output(Count(total))
+@dataclass
+class CountVowelsInput(extism.Json):
+    text: str
 
+@extism.plugin_fn
+def count_vowels(cfg: extism.Config, input: str) -> Count:
+    msg = cfg.get_str("message")
+    extism.log(extism.LogLevel.Info, f"Config: {msg}")
+    extism.log(extism.LogLevel.Info, f"Input: {input}")
+
+
+@extism.plugin_fn
+def count_vowels_dataclass(input: CountVowelsInput) -> Count:
+    extism.log(extism.LogLevel.Info, f"Input: {input.text}")

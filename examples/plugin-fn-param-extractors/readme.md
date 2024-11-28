@@ -7,7 +7,7 @@
 
 ```
 
-## Calling the example
+## Calling the example functions
 
 ```sh
 extism call examples/plugin-fn-param-extractors/out.wasm count_vowels \
@@ -15,4 +15,9 @@ extism call examples/plugin-fn-param-extractors/out.wasm count_vowels \
    --input='Hello World Test!' \
    --log-level=info \
    --config message="hello"
+
+extism call examples/plugin-fn-param-extractors/out.wasm count_vowels_dataclass \
+   --wasi \
+   --input='{"text": "Hello"}' \
+   --log-level=info
 ```
