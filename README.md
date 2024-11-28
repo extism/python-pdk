@@ -186,7 +186,7 @@ import extism
 
 @extism.plugin_fn
 def greet():
-  user = extism.Config.get("user")
+  user = extism.Config.get_str("user")
   extism.output_str(f"Hello, {user}!")
 ```
 
