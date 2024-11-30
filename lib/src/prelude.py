@@ -1,10 +1,12 @@
 from typing import Union, Optional
 import json
+import inspect
 from enum import Enum
 from abc import ABC, abstractmethod
 from datetime import datetime
 from base64 import b64encode, b64decode
 from dataclasses import is_dataclass
+from functools import partial
 
 import extism_ffi as ffi
 
@@ -213,12 +215,37 @@ def import_fn(module, name):
 def plugin_fn(func):
     """Annotate a function that will be called by Extism"""
     global __exports
-    __exports.append(func)
+    def _handle_arg(arg_name: str, arg_type: type):
+        match (arg_name, arg_type):
+            case (_, _type) if _type is Config:
+                return Config
+            case (_, _type) if _type is Http:
+                return Http
+            case _:
+                raise ValueError(f"Unsupported argument")
+    
+    
+    
+    sig = inspect.signature(func)
+    annotated_args = {k: v.annotation for k, v in sig.parameters.items()}
+    if "input" in annotated_args:
+        input_arg = annotated_args.pop("input")
+    else:
+        input_arg = None
+    func_args = {k: _handle_arg(k, v) for k, v in annotated_args.items()}
+    func_args = {k: v for k, v in func_args.items() if v is not None}
+    annotated_func = partial(func, **func_args)
 
-    def inner():
-        return func()
-
-    return inner
+    def _defered_input():
+        fn_input = input(input_arg)
+        return annotated_func(input=fn_input)
+    
+    if input_arg:
+        __exports.append(_defered_input)
+        return _defered_input
+    else:
+        __exports.append(annotated_func)
+        return annotated_func
 
 
 def shared_fn(f):
