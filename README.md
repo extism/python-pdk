@@ -60,6 +60,44 @@ The goal of writing an
 Python code to a Wasm module with exported functions that the host application
 can invoke. The first thing you should understand is creating an export.
 
+## Python Dependencies
+
+It is possible to add directories to the Python search path using the `PYTHONPATH` 
+environment variable. This means you should be able to install pure Python dependencies 
+into a virtual environment and add the library path to `PYTHONPATH` before executing
+`extism-py`, for example:
+
+Given code with an import from an external package
+
+```python
+import extism
+import toml # this is from pypi
+```
+
+You can add your dependencies to a virtual environment
+
+```bash
+$ python3 -m virtualenv ./deps
+$ source ./deps/bin/activate
+$ pip install toml
+```
+
+And then point `extism-py` to the dependencies (still using the active virtualenv shell)
+
+```bash
+$ PYTHONPATH=$(python3 -c "import sys; print(sys.path[-1])") extism-py -o a.wasm plugin.py
+```
+
+It's also possible to reference the `site-packages` path directly, even from outside the 
+virtual environment:
+
+```bash
+$ PYTHONPATH=./deps/lib/python3.12/site-packages extism-py -o a.wasm plugin.py
+```
+
+**Note**: This only works with pure Python dependencies, packages that require native shared libraries 
+aren't supported.
+
 ### Exports
 
 Let's write a simple program that exports a `greet` function which will take a
