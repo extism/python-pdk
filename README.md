@@ -82,7 +82,14 @@ $ source ./deps/bin/activate
 $ pip install toml
 ```
 
-And then point `extism-py` to the dependencies
+And then point `extism-py` to the dependencies (still using the active virtualenv shell)
+
+```bash
+$ PYTHONPATH=$(python3 -c "import sys; print(sys.path[-1])") extism-py -o a.wasm plugin.py
+```
+
+It's also possible to reference the `site-packages` path directly, even from outside the 
+virtual environment:
 
 ```bash
 $ PYTHONPATH=./deps/lib/python3.12/site-packages extism-py -o a.wasm plugin.py
