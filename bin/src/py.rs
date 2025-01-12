@@ -51,15 +51,15 @@ fn get_export<R: std::fmt::Debug>(
     let n_args = f.args.args.len();
     let has_return = f.returns.is_some();
 
-    if is_plugin_fn && n_args > 0 {
-        anyhow::bail!(
-            "plugin_fn expects a function with no arguments, {func} should have no arguments"
-        );
-    }
+    // if is_plugin_fn && n_args > 0 {
+    //     anyhow::bail!(
+    //         "plugin_fn expects a function with no arguments, {func} should have no arguments"
+    //     );
+    // }
     Ok(Export {
         name: func,
         is_plugin_fn,
-        params: vec![wagen::ValType::I64; n_args],
+        params: vec![wagen::ValType::I64; 0],
         results: if is_plugin_fn {
             vec![wagen::ValType::I32]
         } else if has_return {
