@@ -102,7 +102,7 @@ def do_install(args):
 
     logging.info(f"Copying data files to {data_dir}")
     shutil.copytree(
-        Path("./lib/target/wasm32-wasi/wasi-deps"), data_dir, dirs_exist_ok=True
+        Path("./lib/target/wasm32-wasip1/wasi-deps"), data_dir, dirs_exist_ok=True
     )
 
     logging.info(f"{exe_file()} installed to {bin_dir}")
