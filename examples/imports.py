@@ -1,5 +1,4 @@
 import extism
-import json
 
 @extism.import_fn("example", "do_something")
 def do_something():
@@ -10,7 +9,7 @@ def reflect(x: str) -> str:
     pass
 
 @extism.import_fn("example", "update_dict")
-def update_dict(x: extism.JsonObject) -> extism.JsonObject:
+def update_dict(x: dict) -> dict:
     pass
 
 @extism.plugin_fn

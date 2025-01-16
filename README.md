@@ -189,28 +189,11 @@ extism call plugin.wasm sum --input='{"a": 20, "b": 21}' --wasi
 # => {"sum":41}
 ```
 
-You can also specify your input and output types as dataclasses using
-`extism.Json`:
-
-```python
-from typing import Optional, List 
-from dataclasses import dataclass
-
-# ...
-
-@dataclass
-class User(extism.Json):
-  admin: bool
-  name: Optional[str]
-  email: str
-  addresses: List[Address]
-
-
-@extism.plugin_fn
-def reflect_user():
-  input = extism.input(User)
-  extism.output(input)
-```
+For automatic deserialization of input types and serialization of output types,
+see [XTP Python Bindgen](https://github.com/dylibso/xtp-python-bindgen/) . The
+`extism.Json` dataclass serialization has been removed in-favor of the
+[Dataclass Wizard](https://dataclass-wizard.readthedocs.io/en/latest/index.html)
+based solution there.
 
 ### Configs
 
