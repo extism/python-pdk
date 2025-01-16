@@ -6,7 +6,7 @@ fn main() {
         println!("cargo::rerun-if-changed={path}");
         std::fs::copy(path, out).unwrap();
     } else {
-        println!("cargo::rerun-if-changed=../lib/target/wasm32-wasi/release/core.wasm");
-        std::fs::copy("../lib/target/wasm32-wasi/release/core.wasm", out).unwrap();
+        println!("cargo::rerun-if-changed=../lib/target/wasm32-wasip1/release/core.wasm");
+        std::fs::copy("../lib/target/wasm32-wasip1/release/core.wasm", out).unwrap();
     }
 }

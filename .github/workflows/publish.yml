@@ -18,7 +18,7 @@ jobs:
         with:
           profile: default
           toolchain: 1.81.0
-          target: wasm32-wasi
+          target: wasm32-wasip1
           default: true
 
       - name: Setup Python
@@ -37,19 +37,19 @@ jobs:
         run: make core
 
       - name: Opt core
-        run: wasm-opt --enable-reference-types --enable-bulk-memory --strip -O3 lib/target/wasm32-wasi/release/core.wasm -o lib/target/wasm32-wasi/release/core.wasm
+        run: wasm-opt --enable-reference-types --enable-bulk-memory --strip -O3 lib/target/wasm32-wasip1/release/core.wasm -o lib/target/wasm32-wasip1/release/core.wasm
 
       - name: Upload core binary to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: engine
-          path: lib/target/wasm32-wasi/release/core.wasm
+          path: lib/target/wasm32-wasip1/release/core.wasm
 
       - name: Upload wasi-deps
         uses: actions/upload-artifact@v4
         with:
           name: wasi-deps
-          path: lib/target/wasm32-wasi/wasi-deps/
+          path: lib/target/wasm32-wasip1/wasi-deps/
 
   compile_cli:
     name: Compile CLI
