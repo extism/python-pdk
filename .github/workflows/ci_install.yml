@@ -18,6 +18,8 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Test Install Script
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         bash ./install.sh
       if: runner.os != 'Windows'

@@ -1,16 +1,20 @@
 #!/bin/bash
 
 if [[ -z "${GITHUB_TOKEN}" ]]; then
-  GITHUB_FLAGS=""
+  GITHUB_FLAGS=()
 else
-  GITHUB_FLAGS="--header \"Authorization: Bearer $GITHUB_TOKEN\" --header \"X-GitHub-Api-Version: 2022-11-28\""
+  GITHUB_FLAGS=('--header' "Authorization: Bearer $GITHUB_TOKEN" '--header' 'X-GitHub-Api-Version: 2022-11-28')
 fi
 
 set -eou pipefail
 
 # Get the latest release
 RELEASE_API_URL="https://api.github.com/repos/extism/python-pdk/releases/latest"
-response=$(curl $GITHUB_FLAGS -s "$RELEASE_API_URL")
+if [[ ${#GITHUB_FLAGS[@]} -eq 0 ]]; then
+  response=$(curl -s "$RELEASE_API_URL")
+else
+  response=$(curl "${GITHUB_FLAGS[@]}" -s "$RELEASE_API_URL")
+fi
 if [ -z "$response" ]; then
     echo "Error: Failed to fetch the latest release from GitHub API."
     exit 1
