@@ -129,7 +129,7 @@ jobs:
       - name: Build CLI ${{ matrix.os }}
         env:
           EXTISM_ENGINE_PATH: core.wasm
-        run: cd bin && cargo build --release --target ${{ matrix.target }} --package extism-py
+        run: cd bin && rustup target add ${{ matrix.target }} && cargo build --release --target ${{ matrix.target }} --package extism-py
 
       - name: Create directory structure
         run: mkdir -p extism-py/bin extism-py/share && mv wasi-deps extism-py/share/extism-py && mv ${{ matrix.path }} extism-py/bin/
