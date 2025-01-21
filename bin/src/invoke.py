@@ -1,4 +1,11 @@
+import extism
 import traceback
+
+# The idea is to keep the host functions wrapped under the extism interface
+# As of now, host_callback is the host function that we intend to expose.
+@extism.import_fn("fc", "host_callback")
+def host_callback(typ: str, payload: str) -> str:
+    pass
 
 
 def __invoke(index, shared, *args):

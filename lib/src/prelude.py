@@ -88,6 +88,23 @@ def import_fn(module, name):
     return inner
 
 
+def compute(func):
+    def wrapper(input: str):
+        # Call the host_callback
+        import json
+        payload = json.dumps({"name": func.__name__, "args": input})
+        args = ("compute", payload)
+        args = [_store(a) for a in args]
+        ret = str
+        # The host_callback function is imported at index 0,
+        # so we make that assumption and pass index 0 to invoke the required
+        # host function.
+        res = ffi.__invoke_host_func(0, *args)
+        return _load(ret, res)
+
+    return wrapper
+
+
 def plugin_fn(func):
     """Annotate a function that will be called by Extism"""
     global __exports
