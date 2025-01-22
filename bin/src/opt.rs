@@ -67,9 +67,34 @@ impl<'a> Optimizer<'a> {
         Self { wizen, ..self }
     }
 
+    #[cfg(target_os = "windows")]
+    fn convert_windows_paths(&self, paths: Vec<(String, PathBuf)>) -> Vec<(String, PathBuf)> {
+        use std::path::Component;
+        let mut ret = vec![];
+        for (_, path) in paths {
+            let new_path = 
+                path.components()
+                    .filter_map(|comp| match comp {
+                        Component::Normal(part) => Some(part.to_string_lossy().to_string()),
+                        _ => None, // Skip root, prefix, or other non-normal components
+                    })
+                    .collect::<Vec<_>>()
+                    .join("/");
+            let normalized = format!("/{}", new_path);
+            ret.push((normalized, path));
+        }
+        ret
+    }
+
     pub fn write_optimized_wasm(self, dest: impl AsRef<Path>) -> Result<(), Error> {
         let python_path = std::env::var("PYTHONPATH").unwrap_or_else(|_| String::from("."));
-        let paths: Vec<&str> = python_path.split(':').collect();
+        let split_paths = std::env::split_paths(&python_path);
+        let paths: Vec<(String, PathBuf)> = split_paths.map(|p| (p.to_string_lossy().to_string(), p)).collect();
+        
+        #[cfg(target_os = "windows")]
+        let paths = self.convert_windows_paths(paths);
+        #[cfg(target_os = "windows")]
+        std::env::set_var("PYTHONPATH", paths.iter().map(|p| p.0.clone()).collect::<Vec<_>>().join(":"));
 
         // Ensure compatibility with old releases
         let mut deps = find_deps().join("usr");
@@ -89,11 +114,11 @@ impl<'a> Optimizer<'a> {
                 .inherit_env(true)
                 .wasm_bulk_memory(true)
                 .map_dir("/usr", deps);
-            for path in paths {
-                if path.is_empty() {
+            for (mapped, path) in paths {
+                if !path.exists() {
                     continue;
                 }
-                w.map_dir(path, path);
+                w.map_dir(mapped, path);
             }
             let wasm = w.run(self.wasm)?;
             std::fs::write(&dest, wasm)?;
