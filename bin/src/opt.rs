@@ -1,6 +1,6 @@
 use anyhow::{Error, Result};
 use std::{
-    path::{Component, Path, PathBuf},
+    path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 use wizer::Wizer;
@@ -69,6 +69,7 @@ impl<'a> Optimizer<'a> {
 
     #[cfg(target_os = "windows")]
     fn convert_windows_paths(&self, paths: Vec<(String, PathBuf)>) -> Vec<(String, PathBuf)> {
+        use std::path::Component;
         let mut ret = vec![];
         for (_, path) in paths {
             let new_path = 
