@@ -1,9 +1,10 @@
 version = 1
-requires-python = ">=3.12"
+revision = 1
+requires-python = ">=3.11"
 
 [[package]]
 name = "python-pdk"
-version = "0.1.4"
+version = "0.1.5"
 source = { virtual = "." }
 
 [package.dev-dependencies]
