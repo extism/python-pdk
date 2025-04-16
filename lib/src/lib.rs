@@ -1,4 +1,4 @@
-use pyo3::types::{PyModule, PyTuple};
+use pyo3::types::{PyModule, PyTuple, PyTracebackMethods};
 use pyo3::{append_to_inittab, conversion::ToPyObject, prelude::*, Py, PyAny, PyResult, Python};
 
 mod py_module;
@@ -15,12 +15,43 @@ fn convert_arg(py: Python, arg: Arg) -> PyObject {
     }
 }
 
+fn wrap_gil<T, F: FnOnce(Python) -> PyResult<T>>(err: T, f: F) -> T {
+    let result = Python::with_gil(|py| {
+        f(py).map_err(|err| {
+            let tb = err.traceback_bound(py).and_then(|x|{
+                if let Ok(x) = x.format() {
+                    Some(x)
+                } else {
+                    None
+                }
+            });
+            let mut s = err.into_value(py).to_string();
+            if let Some(tb) = tb {
+                s += "\n";
+                s += &tb;
+            }
+            s
+        })
+    });
+    match result {
+        Ok(x) => x,
+        Err(error) => {
+            let mem = extism_pdk::Memory::from_bytes(&error)
+                        .expect("Load Python error message into Extism memory");
+            unsafe {
+                extism_pdk::extism::error_set(mem.offset());
+            }
+            err
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn __invoke(index: u32, shared: bool) {
-    Python::with_gil(|py| -> PyResult<()> {
+    wrap_gil((), |py| {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
-            .unwrap()
+           .unwrap()
             .into_iter()
             .map(|x| convert_arg(py, x))
             .collect();
@@ -31,13 +62,12 @@ pub extern "C" fn __invoke(index: u32, shared: bool) {
         let fun: Py<PyAny> = m.getattr("__invoke")?.into();
         fun.call1(py, args)?;
         Ok(())
-    })
-    .unwrap()
+    });
 }
 
 #[no_mangle]
 pub extern "C" fn __invoke_i32(index: u32, shared: bool) -> i32 {
-    Python::with_gil(|py| -> PyResult<i32> {
+    wrap_gil(-1, |py| -> PyResult<i32> {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
             .unwrap()
@@ -55,12 +85,11 @@ pub extern "C" fn __invoke_i32(index: u32, shared: bool) -> i32 {
         }
         Ok(0)
     })
-    .unwrap()
 }
 
 #[no_mangle]
 pub extern "C" fn __invoke_i64(index: u32, shared: bool) -> i64 {
-    Python::with_gil(|py| -> PyResult<i64> {
+    wrap_gil(-1, |py| -> PyResult<i64> {
         let call_args = unsafe { CALL_ARGS.pop() };
         let mut args: Vec<PyObject> = call_args
             .unwrap()
@@ -77,8 +106,7 @@ pub extern "C" fn __invoke_i64(index: u32, shared: bool) -> i64 {
             return Ok(res);
         }
         Ok(0)
-    })
-    .unwrap()
+    }).into()
 }
 
 enum Arg {
