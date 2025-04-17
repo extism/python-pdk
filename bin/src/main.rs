@@ -74,6 +74,9 @@ fn main() -> Result<(), Error> {
             .arg(&opts.input_py)
             .arg("-o")
             .arg(&core_path);
+
+        command.env_clear();
+
         if opts.debug {
             command.arg("-g");
         }
