@@ -239,6 +239,22 @@ extism call plugin.wasm logStuff --wasi --log-level=info
 # => 2023/10/17 14:25:00 Hello, World!
 ```
 
+### HTTP
+
+HTTP calls can be made using `Http.request`:
+
+```python
+import extism
+
+@extism.plugin_fn
+def call_http():
+  url = "https://jsonplaceholder.typicode.com/todos/1"
+  response = Http.request(url, meth="GET")
+  if response.status_code != 200:
+    raise Exception(f"Got non 200 response {response.status_code}")
+  extism.output_str(response.data_str())
+```
+
 ### Using Host Functions
 
 You can defer logic to host functions from your plugin code. 
